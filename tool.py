@@ -23,6 +23,7 @@ def ceildiv(a, b):
 class App:
     def __init__(self, window, snippet_length, category_keyword_dict):
         self.window = window
+        self.window.resizable(False, False)
         #self.window_width = self.window.winfo_screenwidth()
         #self.window_height = self.window.winfo_screenheight()
         self.window_width = 1368
@@ -92,9 +93,9 @@ class App:
         self.create_checklist()
         self.textbox_json.grid(row=0, column=2, sticky="nsew")
 
-        self.window.grid_columnconfigure(0, weight=1, uniform="group1")
-        self.window.grid_columnconfigure(1, weight=1, uniform="group1")
-        self.window.grid_columnconfigure(2, weight=1, uniform="group1")
+        self.window.grid_columnconfigure(0, weight=4, uniform="group1")
+        self.window.grid_columnconfigure(1, weight=3, uniform="group1")
+        self.window.grid_columnconfigure(2, weight=2, uniform="group1")
         self.window.grid_rowconfigure(0, weight=1)
         ## GUI design
         ##################################################################
@@ -256,6 +257,15 @@ class App:
             ret, frame = self.snippet_capture.read()
             if(ret == True and not self.flag_to_stop_video):
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
+                height, width, layers =  frame.shape
+
+                container_video_width = (1368 * 4) / 9
+                
+                if(width > container_video_width):
+                    new_width = int(container_video_width)
+                    new_height = int((new_width * height) / width)
+                    frame = cv2.resize(frame, (new_width, new_height))
+
                 img =Image.fromarray(frame)
                 imgtk = ImageTk.PhotoImage(img)
                 self.label_video.config(image=imgtk)
@@ -405,7 +415,7 @@ class App:
         
         self.text_current_snippet.set("Selected snippet number " + str(self.current_snippet))
         self.window.title(self.video_file_name)
-       	
+        
         # self.button_play.configure(state=NORMAL)
         # self.button_next.configure(state=NORMAL)
         # self.button_goto.configure(state=NORMAL)
