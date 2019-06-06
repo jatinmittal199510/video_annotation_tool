@@ -23,6 +23,7 @@ def ceildiv(a, b):
 class App:
     def __init__(self, window, snippet_length, category_keyword_dict):
         self.window = window
+        self.window.resizable(False, False)
         #self.window_width = self.window.winfo_screenwidth()
         #self.window_height = self.window.winfo_screenheight()
         self.window_width = 1368
@@ -59,7 +60,6 @@ class App:
         self.textbox_goto = tk.Text(self.window, height=2)
         self.text_play_button = tk.StringVar()
         self.textbox_json = tk.Text(self.window)
-
         self.button_browse = tk.Button(self.window, text='LOAD', command=self.browse)
         self.button_play = tk.Button(self.window, textvariable=self.text_play_button, state=DISABLED, command=self.play)
         self.text_play_button.set("PLAY")
@@ -67,7 +67,6 @@ class App:
         self.button_next = tk.Button(self.window, text='PLAY NEXT', state=DISABLED, command=self.next)
         self.button_pause = tk.Button(self.window, text='PAUSE', state=DISABLED, command=self.pause)
         self.button_goto = tk.Button(self.window, text='GOTO N', state=DISABLED, command=self.goto)
-        
         
         self.label_video.grid(in_= self.container_video, row=0 , column=0, columnspan=4, sticky="nsew")
 
@@ -93,9 +92,9 @@ class App:
         self.create_checklist()
         self.textbox_json.grid(row=0, column=2, sticky="nsew")
 
-        self.window.grid_columnconfigure(0, weight=1, uniform="group1")
-        self.window.grid_columnconfigure(1, weight=1, uniform="group1")
-        self.window.grid_columnconfigure(2, weight=1, uniform="group1")
+        self.window.grid_columnconfigure(0, weight=4, uniform="group1")
+        self.window.grid_columnconfigure(1, weight=3, uniform="group1")
+        self.window.grid_columnconfigure(2, weight=2, uniform="group1")
         self.window.grid_rowconfigure(0, weight=1)
         ## GUI design
         ##################################################################
@@ -149,7 +148,7 @@ class App:
         self.button_same_as_previous = tk.Button(self.window, text='COPY PREVIOUS SNIPPET ANNOTATIONS', state=DISABLED, command=self.same_as_previous)
         self.button_same_as_previous.grid(in_= self.container_categories, row=row_id+2, column=0, columnspan=4, sticky="nsew")        
 
-        self.button_submit = tk.Button(self.window, text='SUBMIT', state=DISABLED, command=self.submit)
+        self.button_submit = tk.Button(self.window, text='SUBMIT', command=self.submit)
         self.button_submit.grid(in_= self.container_categories, row=row_id+3, column=0, columnspan=4, sticky="nsew")
 
         self.display_selected_keys = tk.StringVar()
@@ -234,10 +233,10 @@ class App:
             self.flag_to_pause_video = False
         else:
             self.flag_to_pause_video = True
-    
+
     def play_snippet(self):
-        self.button_play.configure(state=DISABLED)
-        self.button_submit.configure(state=NORMAL)
+        # self.button_play.configure(state=DISABLED)
+        # self.button_submit.configure(state=NORMAL)
         self.snippet_location = '.tmp/' + str(self.current_snippet) + '.' + str(self.video_file_extension)
         self.snippet_capture = cv2.VideoCapture(self.snippet_location)
         while(self.snippet_capture.isOpened()):
@@ -246,6 +245,15 @@ class App:
             ret, frame = self.snippet_capture.read()
             if(ret == True and not self.flag_to_stop_video):
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
+                height, width, layers =  frame.shape
+
+                container_video_width = (1368 * 4) / 9
+                
+                if(width > container_video_width):
+                    new_width = int(container_video_width)
+                    new_height = int((new_width * height) / width)
+                    frame = cv2.resize(frame, (new_width, new_height))
+
                 img =Image.fromarray(frame)
                 imgtk = ImageTk.PhotoImage(img)
                 self.label_video.config(image=imgtk)
@@ -255,9 +263,9 @@ class App:
             else:
                 break
         self.snippet_capture.release()
-        self.button_play.configure(state=NORMAL)
-        if(self.current_snippet > 1):
-            self.button_same_as_previous.configure(state=NORMAL)
+        # self.button_play.configure(state=NORMAL)
+        # if(self.current_snippet > 1):
+        #     self.button_same_as_previous.configure(state=NORMAL)
 
     def update(self):
         # Get a frame from the video source
@@ -303,12 +311,14 @@ class App:
                 self.display_message()
             else:
                 self.display_selected_keys.set("")
+
             self.text_current_snippet.set("Playing snippet number " + str(self.current_snippet))
             self.button_previous.configure(state=NORMAL)
             if(self.current_snippet == self.snippet_count):
                 self.button_next.configure(state=DISABLED)
             self.stop()    
             self.play()
+
         else:
             self.text_current_snippet.set("Selected snippet number is greater than total number of snippets")
 
@@ -331,12 +341,14 @@ class App:
                 self.display_message()
             else:
                 self.display_selected_keys.set("")                
+
             self.text_current_snippet.set("Playing " + str(self.current_snippet))
             self.button_next.configure(state=NORMAL)
             self.stop()
             self.play()
             if(self.current_snippet == 1):
                 self.button_previous.configure(state=DISABLED)
+
         else:
             self.text_current_snippet.set("Selected snippet number is greater than total number of snippets")
 
@@ -352,14 +364,14 @@ class App:
             else:
                 self.display_selected_keys.set("")
             self.text_current_snippet.set("Selected snippet number " + str(self.current_snippet))
-            if(self.current_snippet == self.snippet_count):
-                self.button_next.configure(state=DISABLED)
-            else:
-                self.button_next.configure(state=NORMAL)
-            if(self.current_snippet == 1):
-                self.button_previous.configure(state=DISABLED)
-            else:
-                self.button_previous.configure(state=NORMAL)
+            # if(self.current_snippet == self.snippet_count):
+            #     self.button_next.configure(state=DISABLED)
+            # else:
+            #     self.button_next.configure(state=NORMAL)
+            # if(self.current_snippet == 1):
+            #     self.button_previous.configure(state=DISABLED)
+            # else:
+            #     self.button_previous.configure(state=NORMAL)
         else:
             self.text_current_snippet.set("Selected snippet number is greater than total number of snippets")
         self.textbox_goto.delete("1.0",tk.END)
@@ -401,9 +413,13 @@ class App:
         os.system(self.split_command)
         
         self.text_current_snippet.set("Selected snippet number " + str(self.current_snippet))
+
         self.button_play.configure(state=NORMAL)
         self.button_next.configure(state=NORMAL)
         self.button_goto.configure(state=NORMAL)
+
+        self.window.title(self.video_file_name)
+
 
 # category_keyword_dictionary = {'nouns': ['ram', 'rahim'], 'verbs': ['go', 'come']}
 config_file_location = sys.argv[1]
