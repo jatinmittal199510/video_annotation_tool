@@ -110,9 +110,11 @@ class App:
         self.container_categories.grid_columnconfigure(3, weight=1, uniform="group1")
 
         self.keyword_state_dict = {}
+        self.checkbutton_dict = {}
         self.new_keyword_dict = {}
         for self.category in self.category_keyword_dictionary:
             self.keyword_state_per_category = {}
+            self.checkbutton_per_category = {}
             self.textbox_category_label = tk.Label(self.window, text=self.category)
             self.textbox_category_label.grid(in_= self.container_categories, row=row_id, column=0, sticky="nsew")
 
@@ -126,9 +128,10 @@ class App:
 
             for self.keyword in self.category_keyword_dictionary[self.category]:
                 self.keyword_variable = tk.BooleanVar()
-                menu.menu.add_checkbutton(label=self.keyword, onvalue=True, offvalue=False, variable=self.keyword_variable)
+                checkbutton = menu.menu.add_checkbutton(label=self.keyword, onvalue=True, offvalue=False, variable=self.keyword_variable)
                 # menu['menu'].add_checkbutton(label=self.keyword, onvalue=True, offvalue=False, variable=self.keyword_variable)
                 self.keyword_state_per_category[self.keyword] = self.keyword_variable
+                self.checkbutton_per_category[self.keyword] = checkbutton
                 
             self.textbox_new_keyword = tk.Text(self.window, height=2)
             self.new_keyword_dict[self.category] = self.textbox_new_keyword
@@ -139,6 +142,7 @@ class App:
             
             
             self.keyword_state_dict[self.category] = self.keyword_state_per_category
+            self.checkbutton_dict[self.category] = self.checkbutton_per_category
             row_id += 1
 
         self.text_sentence_label = tk.StringVar()
@@ -238,9 +242,18 @@ class App:
         else:
             self.flag_to_pause_video = True
 
+    def restore_checklist(self):
+        if(str(self.current_snippet) not in self.output_dict):
+            for category in self.keyword_state_dict:
+                for keyword in self.keyword_state_dict[category]:
+                    self.keyword_state_dict[category][keyword].set(False)
+            return
+        currect_snippet_dict = self.output_dict[str(self.current_snippet)]['categories']
+        for category in currect_snippet_dict:
+            for keyword in currect_snippet_dict[category]:
+                self.keyword_state_dict[category][keyword].set(True)
+
     def play_snippet(self):
-        # self.button_play.configure(state=DISABLED)
-        # self.button_submit.configure(state=NORMAL)
         self.snippet_location = '.tmp/' + str(self.current_snippet) + '.' + str(self.video_file_extension)
         self.snippet_capture = cv2.VideoCapture(self.snippet_location)
         while(self.snippet_capture.isOpened()):
@@ -267,9 +280,6 @@ class App:
             else:
                 break
         self.snippet_capture.release()
-        # self.button_play.configure(state=NORMAL)
-        # if(self.current_snippet > 1):
-        #     self.button_same_as_previous.configure(state=NORMAL)
 
     def update(self):
         # Get a frame from the video source
@@ -322,6 +332,7 @@ class App:
                 self.button_next.configure(state=DISABLED)
             self.stop()    
             self.play()
+            self.restore_checklist()
 
         else:
             self.text_current_snippet.set("Selected snippet number is greater than total number of snippets")
@@ -351,6 +362,7 @@ class App:
             self.play()
             if(self.current_snippet == 1):
                 self.button_previous.configure(state=DISABLED)
+            self.restore_checklist()
 
         else:
             self.text_current_snippet.set("Selected snippet number is greater than total number of snippets")
@@ -375,6 +387,7 @@ class App:
             #     self.button_previous.configure(state=DISABLED)
             # else:
             #     self.button_previous.configure(state=NORMAL)
+            self.restore_checklist()
         else:
             self.text_current_snippet.set("Selected snippet number is greater than total number of snippets")
         self.textbox_goto.delete("1.0",tk.END)
@@ -433,6 +446,7 @@ class App:
         self.button_goto.configure(state=NORMAL)
 
         self.window.title(self.video_file_name)
+        self.restore_checklist()
 
 
 # category_keyword_dictionary = {'nouns': ['ram', 'rahim'], 'verbs': ['go', 'come']}
