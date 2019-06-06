@@ -5,6 +5,8 @@ import PIL.Image, PIL.ImageTk
 import time
 from tkinter.filedialog import askopenfilename
 import json
+from functools import partial
+from tkinter import messagebox
 import sys
 import subprocess
 import math
@@ -32,12 +34,11 @@ class App:
         self.window.title('Video Annotation')
         self.category_keyword_dictionary = category_keyword_dictionary
 
+        self.checkbutton_var_count = 0
         self.flag_to_stop_video = False
         self.flag_to_pause_video = 0
-        # self.video_size = (512, 512)
         self.snippet_length = snippet_length
-        # self.video_capture = 0
-        # self.no_of_categories = no_of_categories
+        
 
         ##################################################################
         ## GUI design
@@ -137,7 +138,7 @@ class App:
             self.new_keyword_dict[self.category] = self.textbox_new_keyword
             self.textbox_new_keyword.grid(in_= self.container_categories, row=row_id, column=2, sticky="nsew")
             
-            self.button_add_keyword = tk.Button(self.window, text='ADD KEY', command=self.add_keyword)
+            self.button_add_keyword = tk.Button(self.window, text='ADD KEY', command=partial(self.add_keyword,self.category))
             self.button_add_keyword.grid(in_=self.container_categories, row=row_id, column=3, sticky="nsew") 
             
             
@@ -155,12 +156,32 @@ class App:
         self.button_same_as_previous = tk.Button(self.window, text='COPY PREVIOUS SNIPPET ANNOTATIONS', state=DISABLED, command=self.same_as_previous)
         self.button_same_as_previous.grid(in_= self.container_categories, row=row_id+2, column=0, columnspan=4, sticky="nsew")        
 
-        self.button_submit = tk.Button(self.window, text='SUBMIT', command=self.submit)
-        self.button_submit.grid(in_= self.container_categories, row=row_id+3, column=0, columnspan=4, sticky="nsew")
+        self.checkbutton_var = tk.StringVar()
+        self.is_event_checkbutton = tk.Checkbutton(self.window, text="This snippet is a part of an event", variable=self.checkbutton_var, 
+                                                        command=self.checked_checkbutton, anchor="w")
+        self.is_event_checkbutton.grid(in_= self.container_categories, row=row_id+3, column=0, columnspan=4, sticky="nsew")
+
+        
+
+
+        self.button_generate_new_id = tk.Button(self.window, text='GENERATE NEW EVENT ID', state=DISABLED, command=self.generate_new_id)
+        self.button_generate_new_id.grid(in_= self.container_categories, row=row_id+4, column=0, columnspan=2, sticky="nsew")        
+        
+        self.textbox_new_id = tk.Text(self.window, height=2)
+        self.textbox_new_id.grid(in_= self.container_categories, row=row_id+4, column=2, columnspan=2 , sticky="nsew")
+
+        self.button_previous_id_var = tk.StringVar()
+        self.button_previous_id_var.set("USE PREVIOUS ID: id : name")
+        self.button_previous_id = tk.Button(self.window, textvariable=self.button_previous_id_var, state=DISABLED, command=self.same_as_previous)
+        self.button_previous_id.grid(in_= self.container_categories, row=row_id+5, column=0, columnspan=4, sticky="nsew")        
+
+
+        self.button_submit = tk.Button(self.window, text='SAVE TO JSON', command=self.submit)
+        self.button_submit.grid(in_= self.container_categories, row=row_id+6, column=0, columnspan=4, sticky="nsew", pady=20)
 
         self.display_selected_keys = tk.StringVar()
         self.textbox_display = tk.Message(self.window, textvariable=self.display_selected_keys, anchor="c")
-        self.textbox_display.grid(in_= self.container_categories, row=row_id+4, column=0, columnspan=4, sticky="nsew", pady=20)
+        self.textbox_display.grid(in_= self.container_categories, row=row_id+7, column=0, columnspan=4, sticky="nsew", pady=20)
         #self.display_selected_keys.set("")
 
 
@@ -177,19 +198,40 @@ class App:
         row_id = 0
         self.create_checklist()
 
-    def add_keyword(self):
+    def add_keyword(self, category):
         global row_id
-        for k in self.new_keyword_dict:
-            new_keyword = self.new_keyword_dict[k].get("1.0", tk.END)
-            new_keyword = new_keyword.strip()
-            if(len(new_keyword) > 0):
-                if(new_keyword not in self.category_keyword_dictionary[k]):
-                    self.category_keyword_dictionary[k].append(new_keyword)
-        with open(config_file_location, 'w') as fp:
-            json.dump(self.category_keyword_dictionary, fp)
-        self.container_categories.destroy()
-        row_id = 0
-        self.create_checklist()
+        print(category)
+        new_keyword = self.new_keyword_dict[category].get("1.0", tk.END)
+        new_keyword = new_keyword.strip()
+        if(len(new_keyword) > 0):
+            if(new_keyword not in self.category_keyword_dictionary[category]):
+                self.category_keyword_dictionary[category].append(new_keyword)
+                with open(config_file_location, 'w') as fp:
+                    json.dump(self.category_keyword_dictionary, fp)
+                self.container_categories.destroy()
+                row_id = 0
+                self.create_checklist()
+            else:
+                messagebox.showwarning("Error", "Keyword already exists!")
+        else:
+            messagebox.showwarning("Error", "Enter a keyword first")
+        
+    def generate_new_id(self):
+        print("generate new id")
+
+    def use_previous_id(self):
+        print("use previous id")  
+
+    def checked_checkbutton(self):
+        print(self.checkbutton_var_count)
+        # self.checkbutton_var_count += 1
+
+        # if (self.checkbutton_var%2)==1:
+        #     self.button_previous_id.configure(state=NORMAL)
+        #     self.button_generate_new_id.configure(state=NORMAL)
+        # else:
+        #     self.button_previous_id.configure(state=DISABLED)
+        #     self.button_generate_new_id.configure(state=DISABLED)
 
     def submit(self):
         self.textbox_json.delete("1.0",tk.END)
@@ -406,10 +448,6 @@ class App:
         if(isinstance(self.video_file_location, tuple)):
             return
 
-        # self.textbox_current_snippet.config(text='')
-        # self.textbox_snippet_count.config(text='')
-        # self.textbox_file_location.config(text='')
-
         self.video_file_name_with_location = self.video_file_location.split('.')[0]
         self.json_file_name_with_location = self.video_file_name_with_location + '.json'
         self.output_dict = {}
@@ -424,6 +462,10 @@ class App:
             for each_key in self.output_dict.keys():
                 if each_key not in self.dict_keys and int(each_key) > self.current_snippet:
                     self.current_snippet = int(each_key)
+            if str(self.current_snippet) in self.output_dict.keys():
+                self.display_message()
+            else:
+                self.display_selected_keys.set("")
         self.video_file_name = self.video_file_name_with_location.split('/')[-1]
         self.window.title(self.video_file_name)
         
