@@ -39,7 +39,11 @@ class App:
         self.flag_to_stop_video = False
         self.flag_to_pause_video = 0
         self.snippet_length = snippet_length
+
         self.keyword_state_dict = {}
+
+        self.current_event_id = 1
+        self.current_event_name = "_"
         
 
         ##################################################################
@@ -62,8 +66,10 @@ class App:
         self.textbox_current_snippet = tk.Label(self.window, textvariable=self.text_current_snippet)
         self.textbox_goto = tk.Text(self.window, height=2)
         self.text_play_button = tk.StringVar()
+
         self.textbox_json = tk.Text(self.window)
         self.button_browse = tk.Button(self.window, text='LOAD VIDEO', command=self.browse)
+
         self.button_play = tk.Button(self.window, textvariable=self.text_play_button, state=DISABLED, command=self.play)
         self.text_play_button.set("PLAY")
         self.button_previous = tk.Button(self.window, text='PLAY PREVIOUS', state=DISABLED, command=self.previous) 
@@ -93,7 +99,17 @@ class App:
         self.container_video.grid(row=0, column=0, sticky="nsew")
 
         self.create_checklist()
-        self.textbox_json.grid(row=0, column=2, sticky="nsew")
+
+        self.json_container = tk.Frame(self.window)
+        self.textbox_json = tk.Text(self.window)
+        self.json_container.grid(row=0, column=2, sticky="nsew")
+        self.json_container.grid_rowconfigure(0, weight=1)
+        self.json_container.grid_rowconfigure(1, weight=1)
+        self.json_container.grid_columnconfigure(0, weight=1)
+        self.display_selected_keys = tk.StringVar()
+        self.textbox_display = tk.Message(self.window, textvariable=self.display_selected_keys, anchor="c")
+        self.textbox_display.grid(in_= self.json_container, row=0, column=0, sticky="nsew")
+        self.textbox_json.grid(in_= self.json_container,row=1, column=0, sticky="nsew")
 
         self.window.grid_columnconfigure(0, weight=4, uniform="group1")
         self.window.grid_columnconfigure(1, weight=3, uniform="group1")
@@ -149,16 +165,22 @@ class App:
 
         self.text_sentence_label = tk.StringVar()
         self.textbox_sentence_label = tk.Label(self.window, textvariable=self.text_sentence_label)
-        self.textbox_sentence_label.grid(in_= self.container_categories, row=row_id, column=0, columnspan=4, sticky="nsew")
-        self.text_sentence_label.set("Sentence for snippet:")
+        self.textbox_sentence_label.grid(in_= self.container_categories, row=row_id, column=0,sticky="nsew")
+        self.text_sentence_label.set("Caption:")
 
         self.textbox_sentence= tk.Text(self.window, height=2)
-        self.textbox_sentence.grid(in_= self.container_categories, row=row_id+1, column=0, columnspan=4 , sticky="nsew")
-        self.button_same_as_previous = tk.Button(self.window, text='LOAD ANNOTATIONS FROM PREVIOUS SNIPPET', command=self.same_as_previous)
-        self.button_same_as_previous.grid(in_= self.container_categories, row=row_id+2, column=0, columnspan=4, sticky="nsew")        
 
-        self.checkbutton_var = tk.StringVar()
-        self.is_event_checkbutton = tk.Checkbutton(self.window, text="This snippet is a part of an event", variable=self.checkbutton_var, 
+        self.textbox_sentence.grid(in_= self.container_categories, row=row_id, column=1, columnspan=3 , sticky="nsew")
+        self.button_same_as_previous = tk.Button(self.window, text='LOAD ANNOTATIONS FROM PREVIOUS SNIPPET', state=DISABLED, command=self.same_as_previous)
+        self.button_same_as_previous.grid(in_= self.container_categories, row=row_id+1, column=0, columnspan=4, sticky="nsew")        
+
+        self.is_snippet_transition_var = tk.BooleanVar()
+        self.is_snippet_transition = tk.Checkbutton(self.window, text="This snippet is a transition snippet", 
+                                                        variable=self.is_snippet_transition_var, anchor="w",onvalue=True, offvalue=False)
+        self.is_snippet_transition.grid(in_= self.container_categories, row=row_id+2, column=0, columnspan=4, sticky="nsew")
+
+
+        self.is_event_checkbutton = tk.Checkbutton(self.window, text="This snippet is a part of an event", 
                                                         command=self.checked_checkbutton, anchor="w")
         self.is_event_checkbutton.grid(in_= self.container_categories, row=row_id+3, column=0, columnspan=4, sticky="nsew")
 
@@ -168,21 +190,23 @@ class App:
         self.button_generate_new_id = tk.Button(self.window, text='GENERATE NEW EVENT ID', state=DISABLED, command=self.generate_new_id)
         self.button_generate_new_id.grid(in_= self.container_categories, row=row_id+4, column=0, columnspan=2, sticky="nsew")        
         
-        self.textbox_new_id = tk.Text(self.window, height=2)
-        self.textbox_new_id.grid(in_= self.container_categories, row=row_id+4, column=2, columnspan=2 , sticky="nsew")
-
         self.button_previous_id_var = tk.StringVar()
-        self.button_previous_id_var.set("USE PREVIOUS ID: id : name")
+        self.button_previous_id_var.set("USE PREVIOUS ID: " + str(self.current_event_id) + ": " + self.current_event_name)
         self.button_previous_id = tk.Button(self.window, textvariable=self.button_previous_id_var, state=DISABLED, command=self.same_as_previous)
-        self.button_previous_id.grid(in_= self.container_categories, row=row_id+5, column=0, columnspan=4, sticky="nsew")        
+        self.button_previous_id.grid(in_= self.container_categories, row=row_id+4, column=2, columnspan=2, sticky="nsew")        
 
+        self.caption_label = tk.Label(self.window, text="Event Name:")
+        self.caption_label.grid(in_= self.container_categories, row=row_id+5, column=0, sticky="nsew")
+        
+
+        self.textbox_new_id = tk.Text(self.window, height=2)
+        self.textbox_new_id.grid(in_= self.container_categories, row=row_id+5, column=1, columnspan=3 , sticky="nsew")
+        self.textbox_new_id.configure(state="disabled")
 
         self.button_submit = tk.Button(self.window, text='SAVE TO JSON', command=self.submit)
         self.button_submit.grid(in_= self.container_categories, row=row_id+6, column=0, columnspan=4, sticky="nsew", pady=20)
 
-        self.display_selected_keys = tk.StringVar()
-        self.textbox_display = tk.Message(self.window, textvariable=self.display_selected_keys, anchor="c")
-        self.textbox_display.grid(in_= self.container_categories, row=row_id+7, column=0, columnspan=4, sticky="nsew", pady=20)
+        
         #self.display_selected_keys.set("")
 
 
@@ -229,21 +253,22 @@ class App:
             messagebox.showwarning("Error", "Enter a keyword first")
         
     def generate_new_id(self):
-        print("generate new id")
+        self.current_event_id += 1
 
     def use_previous_id(self):
         print("use previous id")  
 
     def checked_checkbutton(self):
-        print(self.checkbutton_var_count)
-        # self.checkbutton_var_count += 1
-
-        # if (self.checkbutton_var%2)==1:
-        #     self.button_previous_id.configure(state=NORMAL)
-        #     self.button_generate_new_id.configure(state=NORMAL)
-        # else:
-        #     self.button_previous_id.configure(state=DISABLED)
-        #     self.button_generate_new_id.configure(state=DISABLED)
+        self.checkbutton_var_count += 1
+        if (self.checkbutton_var_count%2)==1:
+            self.button_generate_new_id.configure(state=NORMAL)
+            self.textbox_new_id.configure(state="normal")
+            if(self.current_event_id > 0):
+                self.button_previous_id.configure(state=NORMAL)
+        else:
+            self.button_previous_id.configure(state=DISABLED)
+            self.button_generate_new_id.configure(state=DISABLED)
+            self.textbox_new_id.configure(state="disabled")
 
     def submit(self):
         self.textbox_json.delete("1.0",tk.END)
