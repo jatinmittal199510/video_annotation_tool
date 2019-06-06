@@ -365,7 +365,8 @@ class App:
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
                 height, width, layers =  frame.shape
 
-                container_video_width = (1368 * 4) / 9
+                self.window_width = self.window.winfo_screenwidth()
+                container_video_width = (self.window_width * 4) / 9
                 
                 if(width > container_video_width):
                     new_width = int(container_video_width)
