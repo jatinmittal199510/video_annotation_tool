@@ -16,6 +16,7 @@ import threading
 from tkinter import *
 from PIL import Image, ImageTk
 import time
+import copy
 
 row_id = 0
 
@@ -38,6 +39,7 @@ class App:
         self.flag_to_stop_video = False
         self.flag_to_pause_video = 0
         self.snippet_length = snippet_length
+        self.keyword_state_dict = {}
         
 
         ##################################################################
@@ -61,7 +63,7 @@ class App:
         self.textbox_goto = tk.Text(self.window, height=2)
         self.text_play_button = tk.StringVar()
         self.textbox_json = tk.Text(self.window)
-        self.button_browse = tk.Button(self.window, text='LOAD', command=self.browse)
+        self.button_browse = tk.Button(self.window, text='LOAD VIDEO', command=self.browse)
         self.button_play = tk.Button(self.window, textvariable=self.text_play_button, state=DISABLED, command=self.play)
         self.text_play_button.set("PLAY")
         self.button_previous = tk.Button(self.window, text='PLAY PREVIOUS', state=DISABLED, command=self.previous) 
@@ -110,7 +112,6 @@ class App:
         self.container_categories.grid_columnconfigure(2, weight=1, uniform="group1")
         self.container_categories.grid_columnconfigure(3, weight=1, uniform="group1")
 
-        self.keyword_state_dict = {}
         self.checkbutton_dict = {}
         self.new_keyword_dict = {}
         for self.category in self.category_keyword_dictionary:
@@ -153,7 +154,7 @@ class App:
 
         self.textbox_sentence= tk.Text(self.window, height=2)
         self.textbox_sentence.grid(in_= self.container_categories, row=row_id+1, column=0, columnspan=4 , sticky="nsew")
-        self.button_same_as_previous = tk.Button(self.window, text='COPY PREVIOUS SNIPPET ANNOTATIONS', state=DISABLED, command=self.same_as_previous)
+        self.button_same_as_previous = tk.Button(self.window, text='LOAD ANNOTATIONS FROM PREVIOUS SNIPPET', command=self.same_as_previous)
         self.button_same_as_previous.grid(in_= self.container_categories, row=row_id+2, column=0, columnspan=4, sticky="nsew")        
 
         self.checkbutton_var = tk.StringVar()
@@ -186,17 +187,18 @@ class App:
 
 
     def add_category(self):
-        global row_id
-        new_category = self.textbox_new_category.get("1.0", tk.END)
-        new_category = new_category.strip()
-        if(len(new_category) > 0):
-            if(new_category not in self.category_keyword_dictionary):
-                self.category_keyword_dictionary[new_category] = [] 
-        with open(config_file_location, 'w') as fp:
-            json.dump(self.category_keyword_dictionary, fp)
-        self.container_categories.destroy()
-        row_id = 0
-        self.create_checklist()
+        pass
+        # global row_id
+        # new_category = self.textbox_new_category.get("1.0", tk.END)
+        # new_category = new_category.strip()
+        # if(len(new_category) > 0):
+        #     if(new_category not in self.category_keyword_dictionary):
+        #         self.category_keyword_dictionary[new_category] = [] 
+        # with open(config_file_location, 'w') as fp:
+        #     json.dump(self.category_keyword_dictionary, fp)
+        # self.container_categories.destroy()
+        # row_id = 0
+        # self.create_checklist()
 
     def add_keyword(self, category):
         global row_id
@@ -210,7 +212,17 @@ class App:
                     json.dump(self.category_keyword_dictionary, fp)
                 self.container_categories.destroy()
                 row_id = 0
+                keyword_state_dict_copy = {}
+                for category in self.keyword_state_dict:
+                    keyword_state_per_category_copy = {}
+                    for keyword in self.keyword_state_dict[category]:
+                        keyword_state_per_category_copy[keyword] = self.keyword_state_dict[category][keyword].get()
+                    keyword_state_dict_copy[category] = keyword_state_per_category_copy
                 self.create_checklist()
+                for category in keyword_state_dict_copy:
+                    for keyword in keyword_state_dict_copy[category]:
+                        self.keyword_state_dict[category][keyword].set(keyword_state_dict_copy[category][keyword])
+                
             else:
                 messagebox.showwarning("Error", "Keyword already exists!")
         else:
@@ -256,21 +268,32 @@ class App:
             self.display_selected_keys.set("")
 
     def same_as_previous(self):
-        if(str(self.current_snippet - 1) in self.output_dict):
-            self.textbox_json.delete("1.0",tk.END)
-            self.output_dict[str(self.current_snippet)] = self.output_dict[str(self.current_snippet - 1)]
+        # self.restore_checklist_with_previous_snippet()
+        if(str(self.current_snippet-1) in self.output_dict):
             message = ""
-            for cat, listt in self.output_dict[str(self.current_snippet - 1)]['categories'].items():
-                message += cat.upper() + ': '
-                for keys_in_list, checker in self.output_dict[str(self.current_snippet -1)]['categories'][cat].items():
-                    if checker:
-                        message += keys_in_list + ', '
+            currect_snippet_dict = self.output_dict[str(self.current_snippet-1)]['categories']
+            for category in currect_snippet_dict:
+                message += category.upper() + ': '
+                for keyword in currect_snippet_dict[category]:
+                    message += keyword + ', '
+                    self.keyword_state_dict[category][keyword].set(True)
+                message += '\n'
             self.display_selected_keys.set(message)
-            with open(self.video_file_name_with_location + '.json', 'w') as fp:
-                json.dump(self.output_dict, fp)
-            self.textbox_json.insert(tk.END, str(self.output_dict))
-        else:
-            self.display_selected_keys.set("")
+        # if(str(self.current_snippet - 1) in self.output_dict):
+        #     self.textbox_json.delete("1.0",tk.END)
+        #     self.output_dict[str(self.current_snippet)] = self.output_dict[str(self.current_snippet - 1)]
+        #     message = ""
+        #     for cat, listt in self.output_dict[str(self.current_snippet - 1)]['categories'].items():
+        #         message += cat.upper() + ': '
+        #         for keys_in_list, checker in self.output_dict[str(self.current_snippet -1)]['categories'][cat].items():
+        #             if checker:
+        #                 message += keys_in_list + ', '
+        #     self.display_selected_keys.set(message)
+        #     with open(self.video_file_name_with_location + '.json', 'w') as fp:
+        #         json.dump(self.output_dict, fp)
+        #     self.textbox_json.insert(tk.END, str(self.output_dict))
+        # else:
+        #     self.display_selected_keys.set("")
 
     def resize(image):
         im = image
@@ -291,6 +314,17 @@ class App:
                     self.keyword_state_dict[category][keyword].set(False)
             return
         currect_snippet_dict = self.output_dict[str(self.current_snippet)]['categories']
+        for category in currect_snippet_dict:
+            for keyword in currect_snippet_dict[category]:
+                self.keyword_state_dict[category][keyword].set(True)
+
+    def restore_checklist_with_previous_snippet(self):
+        if(str(self.current_snippet-1) not in self.output_dict):
+            for category in self.keyword_state_dict:
+                for keyword in self.keyword_state_dict[category]:
+                    self.keyword_state_dict[category][keyword].set(False)
+            return
+        currect_snippet_dict = self.output_dict[str(self.current_snippet-1)]['categories']
         for category in currect_snippet_dict:
             for keyword in currect_snippet_dict[category]:
                 self.keyword_state_dict[category][keyword].set(True)
@@ -494,8 +528,11 @@ class App:
 # category_keyword_dictionary = {'nouns': ['ram', 'rahim'], 'verbs': ['go', 'come']}
 config_file_location = sys.argv[1]
 with open(config_file_location) as json_file:  
-    category_keyword_dictionary = json.load(json_file)
+    config_file_dictionary = json.load(json_file)
 
-snippet_length = sys.argv[2]
+print(str(config_file_dictionary))
+snippet_length = config_file_dictionary["snippet_size"]
+category_keyword_dictionary = config_file_dictionary["category_keywords"]
+
 # Create a window and pass it to the Application object
 w = App(tk.Tk(), snippet_length, category_keyword_dictionary)
