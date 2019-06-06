@@ -9,6 +9,7 @@ import sys
 import subprocess
 import math
 import os
+import os.path as path
 import threading
 from tkinter import *
 from PIL import Image, ImageTk
@@ -371,8 +372,19 @@ class App:
     def browse(self):
         self.video_file_location = askopenfilename()
         self.video_file_name_with_location = self.video_file_location.split('.')[0]
-        self.video_file_name = self.video_file_name_with_location.split('/')[-1]
+        self.json_file_name_with_location = self.video_file_name_with_location + '.json'
         self.output_dict = {}
+        self.current_snippet = 1
+        self.dict_keys = ["video_name", "video_category", "snippet_size", "duration", "num_snippets"]
+        if path.exists(self.json_file_name_with_location):
+            with open(self.json_file_name_with_location) as json_file:  
+                self.output_dict = json.load(json_file)
+            self.textbox_json.insert(tk.END, str(self.output_dict))
+            for each_key in self.output_dict.keys():
+                if each_key not in self.dict_keys and int(each_key) > self.current_snippet:
+                    self.current_snippet = int(each_key)
+        self.video_file_name = self.video_file_name_with_location.split('/')[-1]
+        
         self.output_dict['video_name'] = self.video_file_name
 
         self.video_file_extension = self.video_file_location.split('.')[1]
@@ -384,7 +396,7 @@ class App:
         self.text_snippet_count.set("Total number of snippets are " + str(self.snippet_count))
         self.split_command = "python3 splitter/ffmpeg-split.py -f " + self.video_file_location + " -s " + str(self.snippet_length) + " >/dev/null 2>&1"
         os.system(self.split_command)
-        self.current_snippet = 1
+        
         self.text_current_snippet.set("Selected snippet number " + str(self.current_snippet))
         self.button_play.configure(state=NORMAL)
         self.button_next.configure(state=NORMAL)
