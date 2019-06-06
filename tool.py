@@ -189,9 +189,10 @@ class App:
         category_caption_dict = {}
         category_dict = {}
         for category in self.keyword_state_dict:
-            keyword_dict = {}
+            keyword_dict = []
             for keyword in self.keyword_state_dict[category]:
-                keyword_dict[keyword] = self.keyword_state_dict[category][keyword].get()
+            	if self.keyword_state_dict[category][keyword].get():
+                	keyword_dict.append(keyword)
             category_dict[category] = keyword_dict
         category_caption_dict['categories'] = category_dict
         category_caption_dict['caption'] = self.textbox_sentence.get("1.0",tk.END).rstrip('\n')
@@ -326,9 +327,8 @@ class App:
         message = ""
         for cat, listt in self.output_dict[str(self.current_snippet)]['categories'].items():
             message += cat.upper() + ': '
-            for keys_in_list, checker in self.output_dict[str(self.current_snippet)]['categories'][cat].items():
-                if checker:
-                    message += keys_in_list.rstrip('\n') + ', '
+            for checked_keys in self.output_dict[str(self.current_snippet)]['categories'][cat]:
+                message += checked_keys.rstrip('\n') + ', '
             message += '\n'
         self.display_selected_keys.set(message)
 
@@ -398,10 +398,12 @@ class App:
         self.json_file_name_with_location = self.video_file_name_with_location + '.json'
         self.output_dict = {}
         self.current_snippet = 1
+        self.text_play_button.set("PLAY")
         self.dict_keys = ["video_name", "video_category", "snippet_size", "duration", "num_snippets"]
         if path.exists(self.json_file_name_with_location):
             with open(self.json_file_name_with_location) as json_file:  
                 self.output_dict = json.load(json_file)
+            self.textbox_json.delete("1.0",tk.END)
             self.textbox_json.insert(tk.END, str(self.output_dict))
             for each_key in self.output_dict.keys():
                 if each_key not in self.dict_keys and int(each_key) > self.current_snippet:
@@ -422,8 +424,7 @@ class App:
         
         self.text_video_file_location.set(self.video_file_location)
         self.text_current_snippet.set("Selected snippet number " + str(self.current_snippet))
-
-		os.system(self.split_command)
+        os.system(self.split_command)
         self.button_play.configure(state=NORMAL)
         self.button_next.configure(state=NORMAL)
         self.button_goto.configure(state=NORMAL)
