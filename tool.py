@@ -288,7 +288,7 @@ class App:
             self.canvas.create_image(0, 0, image = self.photo, anchor = tkinter.NW)
         self.window.after(self.delay, self.update)
 
-    def snippet_count(self):
+    def get_snippet_count(self):
         self.video_length = subprocess.check_output(("ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", self.video_file_location)).strip()
         self.video_length = int(float(self.video_length))
         print("Video length in seconds: "+ str(self.video_length)) 
@@ -386,7 +386,15 @@ class App:
         text_current_snippet.set(d)
 
     def browse(self):
+        self.stop()
         self.video_file_location = askopenfilename()
+        if(isinstance(self.video_file_location, tuple)):
+            return
+
+        # self.textbox_current_snippet.config(text='')
+        # self.textbox_snippet_count.config(text='')
+        # self.textbox_file_location.config(text='')
+
         self.video_file_name_with_location = self.video_file_location.split('.')[0]
         self.json_file_name_with_location = self.video_file_name_with_location + '.json'
         self.output_dict = {}
@@ -400,6 +408,7 @@ class App:
                 if each_key not in self.dict_keys and int(each_key) > self.current_snippet:
                     self.current_snippet = int(each_key)
         self.video_file_name = self.video_file_name_with_location.split('/')[-1]
+        self.window.title(self.video_file_name)
         
         self.output_dict['video_name'] = self.video_file_name
 
@@ -407,14 +416,15 @@ class App:
         if(self.video_file_extension != 'mp4' and self.video_file_extension != 'avi'):
             self.text_current_snippet.set("Chosen file is not a video file")
             return    
-        self.text_video_file_location.set(self.video_file_location)
-        self.snippet_count()
+        # self.text_video_file_location.set(self.video_file_location)
+        self.get_snippet_count()
         self.text_snippet_count.set("Total number of snippets are " + str(self.snippet_count))
         self.split_command = "python3 splitter/ffmpeg-split.py -f " + self.video_file_location + " -s " + str(self.snippet_length) + " >/dev/null 2>&1"
-        os.system(self.split_command)
         
+        self.text_video_file_location.set(self.video_file_location)
         self.text_current_snippet.set("Selected snippet number " + str(self.current_snippet))
-        self.window.title(self.video_file_name)
+        
+        os.system(self.split_command)
         
         # self.button_play.configure(state=NORMAL)
         # self.button_next.configure(state=NORMAL)
