@@ -32,6 +32,7 @@ class App:
         self.category_keyword_dictionary = category_keyword_dictionary
 
         self.flag_to_stop_video = False
+        self.flag_to_pause_video = 0
         # self.video_size = (512, 512)
         self.snippet_length = snippet_length
         # self.video_capture = 0
@@ -48,7 +49,6 @@ class App:
         self.text_snippet_count = tk.StringVar()
         self.text_current_snippet = tk.StringVar()
         self.text_video_file_location = tk.StringVar()
-        self.text_play_button = tk.StringVar()
         
         self.label_video = tk.Label(self.window)
 
@@ -60,10 +60,10 @@ class App:
         self.textbox_json = tk.Text(self.window)
 
         self.button_browse = tk.Button(self.window, text='BROWSE', command=self.browse)
-        self.button_play = tk.Button(self.window, textvariable='PLAY', state=DISABLED, command=self.play)
+        self.button_play = tk.Button(self.window, text='START', state=DISABLED, command=self.play)
         self.button_previous = tk.Button(self.window, text='PREVIOUS', state=DISABLED, command=self.previous) 
         self.button_next = tk.Button(self.window, text='NEXT', state=DISABLED, command=self.next) #change to next 
-        self.button_pause = tk.Button(self.window, text='PAUSE', state=DISABLED, command=self.pause) #change to next 
+        self.button_pause = tk.Button(self.window, text='PLAY/PAUSE', state=DISABLED, command=self.pause) #change to next 
         self.button_goto = tk.Button(self.window, text='GOTO N', state=DISABLED, command=self.goto) 
         self.button_same_as_previous = tk.Button(self.window, text='SAME AS PREVIOUS', state=DISABLED, command=self.same_as_previous)
         self.button_browse_json = tk.Button(self.window, text='BROWSE JSON', state=DISABLED, command=self.browse_json) 
@@ -240,14 +240,19 @@ class App:
         return im
 
     def pause(self):
-        print("Pause Video command")
-
+        if(self.flag_to_pause_video):
+            self.flag_to_pause_video = False
+        else:
+            self.flag_to_pause_video = True
+    
     def play_snippet(self):
         self.button_play.configure(state=DISABLED)
         self.button_submit.configure(state=NORMAL)
         self.snippet_location = '.tmp/' + str(self.current_snippet) + '.' + str(self.video_file_extension)
         self.snippet_capture = cv2.VideoCapture(self.snippet_location)
         while(self.snippet_capture.isOpened()):
+            if(self.flag_to_pause_video):
+                continue
             ret, frame = self.snippet_capture.read()
             if(ret == True and not self.flag_to_stop_video):
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
