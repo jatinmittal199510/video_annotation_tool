@@ -60,13 +60,13 @@ class App:
         self.textbox_json = tk.Text(self.window)
 
         self.button_browse = tk.Button(self.window, text='BROWSE', command=self.browse)
-        self.button_play = tk.Button(self.window, text='START', state=DISABLED, command=self.play)
-        self.button_previous = tk.Button(self.window, text='PREVIOUS', state=DISABLED, command=self.previous) 
-        self.button_next = tk.Button(self.window, text='NEXT', state=DISABLED, command=self.next) #change to next 
-        self.button_pause = tk.Button(self.window, text='PLAY/PAUSE', state=DISABLED, command=self.pause) #change to next 
-        self.button_goto = tk.Button(self.window, text='GOTO N', state=DISABLED, command=self.goto) 
-        self.button_same_as_previous = tk.Button(self.window, text='SAME AS PREVIOUS', state=DISABLED, command=self.same_as_previous)
-        self.button_browse_json = tk.Button(self.window, text='BROWSE JSON', state=DISABLED, command=self.browse_json) 
+        self.button_play = tk.Button(self.window, text='START', command=self.play)
+        self.button_previous = tk.Button(self.window, text='PREVIOUS', command=self.previous) 
+        self.button_next = tk.Button(self.window, text='NEXT', command=self.next) #change to next 
+        self.button_pause = tk.Button(self.window, text='PLAY/PAUSE', command=self.pause) #change to next 
+        self.button_goto = tk.Button(self.window, text='GOTO N', command=self.goto) 
+        self.button_same_as_previous = tk.Button(self.window, text='SAME AS PREVIOUS', command=self.same_as_previous)
+        self.button_browse_json = tk.Button(self.window, text='BROWSE JSON', command=self.browse_json) 
         
         self.label_video.grid(in_= self.container_video, row=0 , column=0, columnspan=3, sticky="nsew")
 
@@ -152,7 +152,7 @@ class App:
         self.textbox_sentence= tk.Text(self.window, height=2)
         self.textbox_sentence.grid(in_= self.container_categories, row=row_id+2, column=0, columnspan=4 , sticky="nsew")
 
-        self.button_submit = tk.Button(self.window, text='SUBMIT', state=DISABLED, command=self.submit)
+        self.button_submit = tk.Button(self.window, text='SUBMIT', command=self.submit)
         self.button_submit.grid(in_= self.container_categories, row=row_id+3, column=0, columnspan=4, sticky="nsew")
 
         self.display_selected_keys = tk.StringVar()
@@ -244,10 +244,10 @@ class App:
             self.flag_to_pause_video = False
         else:
             self.flag_to_pause_video = True
-    
+
     def play_snippet(self):
-        self.button_play.configure(state=DISABLED)
-        self.button_submit.configure(state=NORMAL)
+        # self.button_play.configure(state=DISABLED)
+        # self.button_submit.configure(state=NORMAL)
         self.snippet_location = '.tmp/' + str(self.current_snippet) + '.' + str(self.video_file_extension)
         self.snippet_capture = cv2.VideoCapture(self.snippet_location)
         while(self.snippet_capture.isOpened()):
@@ -265,9 +265,9 @@ class App:
             else:
                 break
         self.snippet_capture.release()
-        self.button_play.configure(state=NORMAL)
-        if(self.current_snippet > 1):
-            self.button_same_as_previous.configure(state=NORMAL)
+        # self.button_play.configure(state=NORMAL)
+        # if(self.current_snippet > 1):
+        #     self.button_same_as_previous.configure(state=NORMAL)
 
     def update(self):
         # Get a frame from the video source
@@ -311,9 +311,9 @@ class App:
             else:
                 self.display_selected_keys.set("")
             self.text_current_snippet.set("Selected snippet number " + str(self.current_snippet))
-            self.button_previous.configure(state=NORMAL)
-            if(self.current_snippet == self.snippet_count):
-                self.button_next.configure(state=DISABLED)
+            # self.button_previous.configure(state=NORMAL)
+            # if(self.current_snippet == self.snippet_count):
+            #     self.button_next.configure(state=DISABLED)
         else:
             self.text_current_snippet.set("Selected snippet number is greater than total number of snippets")
 
@@ -337,9 +337,9 @@ class App:
             else:
                 self.display_selected_keys.set("")                
             self.text_current_snippet.set("Selected snippet number " + str(self.current_snippet))
-            self.button_next.configure(state=NORMAL)
-            if(self.current_snippet == 1):
-                self.button_previous.configure(state=DISABLED)
+            # self.button_next.configure(state=NORMAL)
+            # if(self.current_snippet == 1):
+            #     self.button_previous.configure(state=DISABLED)
         else:
             self.text_current_snippet.set("Selected snippet number is greater than total number of snippets")
 
@@ -355,14 +355,14 @@ class App:
             else:
                 self.display_selected_keys.set("")
             self.text_current_snippet.set("Selected snippet number " + str(self.current_snippet))
-            if(self.current_snippet == self.snippet_count):
-                self.button_next.configure(state=DISABLED)
-            else:
-                self.button_next.configure(state=NORMAL)
-            if(self.current_snippet == 1):
-                self.button_previous.configure(state=DISABLED)
-            else:
-                self.button_previous.configure(state=NORMAL)
+            # if(self.current_snippet == self.snippet_count):
+            #     self.button_next.configure(state=DISABLED)
+            # else:
+            #     self.button_next.configure(state=NORMAL)
+            # if(self.current_snippet == 1):
+            #     self.button_previous.configure(state=DISABLED)
+            # else:
+            #     self.button_previous.configure(state=NORMAL)
         else:
             self.text_current_snippet.set("Selected snippet number is greater than total number of snippets")
         self.textbox_goto.delete("1.0",tk.END)
@@ -404,10 +404,12 @@ class App:
         os.system(self.split_command)
         
         self.text_current_snippet.set("Selected snippet number " + str(self.current_snippet))
-        self.button_play.configure(state=NORMAL)
-        self.button_next.configure(state=NORMAL)
-        self.button_goto.configure(state=NORMAL)
-        self.button_browse_json.configure(state=NORMAL)
+        self.window.title(self.video_file_name)
+       	
+        # self.button_play.configure(state=NORMAL)
+        # self.button_next.configure(state=NORMAL)
+        # self.button_goto.configure(state=NORMAL)
+        # self.button_browse_json.configure(state=NORMAL)
 
 # category_keyword_dictionary = {'nouns': ['ram', 'rahim'], 'verbs': ['go', 'come']}
 config_file_location = sys.argv[1]
