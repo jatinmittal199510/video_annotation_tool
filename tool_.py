@@ -5,6 +5,8 @@ import PIL.Image, PIL.ImageTk
 import time
 from tkinter.filedialog import askopenfilename
 import json
+from functools import partial
+from tkinter import messagebox
 import sys
 import subprocess
 import math
@@ -23,6 +25,7 @@ def ceildiv(a, b):
 class App:
     def __init__(self, window, snippet_length, category_keyword_dict):
         self.window = window
+        self.window.resizable(False, False)
         #self.window_width = self.window.winfo_screenwidth()
         #self.window_height = self.window.winfo_screenheight()
         self.window_width = 1368
@@ -31,12 +34,11 @@ class App:
         self.window.title('Video Annotation')
         self.category_keyword_dictionary = category_keyword_dictionary
 
+        self.checkbutton_var_count = 0
         self.flag_to_stop_video = False
         self.flag_to_pause_video = 0
-        # self.video_size = (512, 512)
         self.snippet_length = snippet_length
-        # self.video_capture = 0
-        # self.no_of_categories = no_of_categories
+        
 
         ##################################################################
         ## GUI design
@@ -59,7 +61,6 @@ class App:
         self.textbox_goto = tk.Text(self.window, height=2)
         self.text_play_button = tk.StringVar()
         self.textbox_json = tk.Text(self.window)
-
         self.button_browse = tk.Button(self.window, text='LOAD', command=self.browse)
         self.button_play = tk.Button(self.window, textvariable=self.text_play_button, state=DISABLED, command=self.play)
         self.text_play_button.set("PLAY")
@@ -67,7 +68,6 @@ class App:
         self.button_next = tk.Button(self.window, text='PLAY NEXT', state=DISABLED, command=self.next)
         self.button_pause = tk.Button(self.window, text='PAUSE', state=DISABLED, command=self.pause)
         self.button_goto = tk.Button(self.window, text='GOTO N', state=DISABLED, command=self.goto)
-        
         
         self.label_video.grid(in_= self.container_video, row=0 , column=0, columnspan=4, sticky="nsew")
 
@@ -93,9 +93,9 @@ class App:
         self.create_checklist()
         self.textbox_json.grid(row=0, column=2, sticky="nsew")
 
-        self.window.grid_columnconfigure(0, weight=1, uniform="group1")
-        self.window.grid_columnconfigure(1, weight=1, uniform="group1")
-        self.window.grid_columnconfigure(2, weight=1, uniform="group1")
+        self.window.grid_columnconfigure(0, weight=4, uniform="group1")
+        self.window.grid_columnconfigure(1, weight=3, uniform="group1")
+        self.window.grid_columnconfigure(2, weight=2, uniform="group1")
         self.window.grid_rowconfigure(0, weight=1)
         ## GUI design
         ##################################################################
@@ -132,7 +132,7 @@ class App:
             self.new_keyword_dict[self.category] = self.textbox_new_keyword
             self.textbox_new_keyword.grid(in_= self.container_categories, row=row_id, column=2, sticky="nsew")
             
-            self.button_add_keyword = tk.Button(self.window, text='ADD KEY', command=self.add_keyword)
+            self.button_add_keyword = tk.Button(self.window, text='ADD KEY', command=partial(self.add_keyword,self.category))
             self.button_add_keyword.grid(in_=self.container_categories, row=row_id, column=3, sticky="nsew") 
             
             
@@ -149,12 +149,32 @@ class App:
         self.button_same_as_previous = tk.Button(self.window, text='COPY PREVIOUS SNIPPET ANNOTATIONS', state=DISABLED, command=self.same_as_previous)
         self.button_same_as_previous.grid(in_= self.container_categories, row=row_id+2, column=0, columnspan=4, sticky="nsew")        
 
-        self.button_submit = tk.Button(self.window, text='SUBMIT', state=DISABLED, command=self.submit)
-        self.button_submit.grid(in_= self.container_categories, row=row_id+3, column=0, columnspan=4, sticky="nsew")
+        self.checkbutton_var = tk.StringVar()
+        self.is_event_checkbutton = tk.Checkbutton(self.window, text="This snippet is a part of an event", variable=self.checkbutton_var, 
+                                                        command=self.checked_checkbutton, anchor="w")
+        self.is_event_checkbutton.grid(in_= self.container_categories, row=row_id+3, column=0, columnspan=4, sticky="nsew")
+
+        
+
+
+        self.button_generate_new_id = tk.Button(self.window, text='GENERATE NEW EVENT ID', state=DISABLED, command=self.generate_new_id)
+        self.button_generate_new_id.grid(in_= self.container_categories, row=row_id+4, column=0, columnspan=2, sticky="nsew")        
+        
+        self.textbox_new_id = tk.Text(self.window, height=2)
+        self.textbox_new_id.grid(in_= self.container_categories, row=row_id+4, column=2, columnspan=2 , sticky="nsew")
+
+        self.button_previous_id_var = tk.StringVar()
+        self.button_previous_id_var.set("USE PREVIOUS ID: id : name")
+        self.button_previous_id = tk.Button(self.window, textvariable=self.button_previous_id_var, state=DISABLED, command=self.same_as_previous)
+        self.button_previous_id.grid(in_= self.container_categories, row=row_id+5, column=0, columnspan=4, sticky="nsew")        
+
+
+        self.button_submit = tk.Button(self.window, text='SAVE TO JSON', command=self.submit)
+        self.button_submit.grid(in_= self.container_categories, row=row_id+6, column=0, columnspan=4, sticky="nsew", pady=20)
 
         self.display_selected_keys = tk.StringVar()
         self.textbox_display = tk.Message(self.window, textvariable=self.display_selected_keys, anchor="c")
-        self.textbox_display.grid(in_= self.container_categories, row=row_id+4, column=0, columnspan=4, sticky="nsew", pady=20)
+        self.textbox_display.grid(in_= self.container_categories, row=row_id+7, column=0, columnspan=4, sticky="nsew", pady=20)
         #self.display_selected_keys.set("")
 
 
@@ -171,28 +191,50 @@ class App:
         row_id = 0
         self.create_checklist()
 
-    def add_keyword(self):
+    def add_keyword(self, category):
         global row_id
-        for k in self.new_keyword_dict:
-            new_keyword = self.new_keyword_dict[k].get("1.0", tk.END)
-            new_keyword = new_keyword.strip()
-            if(len(new_keyword) > 0):
-                if(new_keyword not in self.category_keyword_dictionary[k]):
-                    self.category_keyword_dictionary[k].append(new_keyword)
-        with open(config_file_location, 'w') as fp:
-            json.dump(self.category_keyword_dictionary, fp)
-        self.container_categories.destroy()
-        row_id = 0
-        self.create_checklist()
+        print(category)
+        new_keyword = self.new_keyword_dict[category].get("1.0", tk.END)
+        new_keyword = new_keyword.strip()
+        if(len(new_keyword) > 0):
+            if(new_keyword not in self.category_keyword_dictionary[category]):
+                self.category_keyword_dictionary[category].append(new_keyword)
+                with open(config_file_location, 'w') as fp:
+                    json.dump(self.category_keyword_dictionary, fp)
+                self.container_categories.destroy()
+                row_id = 0
+                self.create_checklist()
+            else:
+                messagebox.showwarning("Error", "Keyword already exists!")
+        else:
+            messagebox.showwarning("Error", "Enter a keyword first")
+        
+    def generate_new_id(self):
+        print("generate new id")
+
+    def use_previous_id(self):
+        print("use previous id")  
+
+    def checked_checkbutton(self):
+        print(self.checkbutton_var_count)
+        # self.checkbutton_var_count += 1
+
+        # if (self.checkbutton_var%2)==1:
+        #     self.button_previous_id.configure(state=NORMAL)
+        #     self.button_generate_new_id.configure(state=NORMAL)
+        # else:
+        #     self.button_previous_id.configure(state=DISABLED)
+        #     self.button_generate_new_id.configure(state=DISABLED)
 
     def submit(self):
         self.textbox_json.delete("1.0",tk.END)
         category_caption_dict = {}
         category_dict = {}
         for category in self.keyword_state_dict:
-            keyword_dict = {}
+            keyword_dict = []
             for keyword in self.keyword_state_dict[category]:
-                keyword_dict[keyword] = self.keyword_state_dict[category][keyword].get()
+            	if self.keyword_state_dict[category][keyword].get():
+                	keyword_dict.append(keyword)
             category_dict[category] = keyword_dict
         category_caption_dict['categories'] = category_dict
         category_caption_dict['caption'] = self.textbox_sentence.get("1.0",tk.END).rstrip('\n')
@@ -234,10 +276,10 @@ class App:
             self.flag_to_pause_video = False
         else:
             self.flag_to_pause_video = True
-    
+
     def play_snippet(self):
-        self.button_play.configure(state=DISABLED)
-        self.button_submit.configure(state=NORMAL)
+        # self.button_play.configure(state=DISABLED)
+        # self.button_submit.configure(state=NORMAL)
         self.snippet_location = '.tmp/' + str(self.current_snippet) + '.' + str(self.video_file_extension)
         self.snippet_capture = cv2.VideoCapture(self.snippet_location)
         while(self.snippet_capture.isOpened()):
@@ -246,6 +288,15 @@ class App:
             ret, frame = self.snippet_capture.read()
             if(ret == True and not self.flag_to_stop_video):
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
+                height, width, layers =  frame.shape
+
+                container_video_width = (1368 * 4) / 9
+                
+                if(width > container_video_width):
+                    new_width = int(container_video_width)
+                    new_height = int((new_width * height) / width)
+                    frame = cv2.resize(frame, (new_width, new_height))
+
                 img =Image.fromarray(frame)
                 imgtk = ImageTk.PhotoImage(img)
                 self.label_video.config(image=imgtk)
@@ -255,9 +306,9 @@ class App:
             else:
                 break
         self.snippet_capture.release()
-        self.button_play.configure(state=NORMAL)
-        if(self.current_snippet > 1):
-            self.button_same_as_previous.configure(state=NORMAL)
+        # self.button_play.configure(state=NORMAL)
+        # if(self.current_snippet > 1):
+        #     self.button_same_as_previous.configure(state=NORMAL)
 
     def update(self):
         # Get a frame from the video source
@@ -268,7 +319,7 @@ class App:
             self.canvas.create_image(0, 0, image = self.photo, anchor = tkinter.NW)
         self.window.after(self.delay, self.update)
 
-    def snippet_count(self):
+    def get_snippet_count(self):
         self.video_length = subprocess.check_output(("ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", self.video_file_location)).strip()
         self.video_length = int(float(self.video_length))
         print("Video length in seconds: "+ str(self.video_length)) 
@@ -303,12 +354,14 @@ class App:
                 self.display_message()
             else:
                 self.display_selected_keys.set("")
+
             self.text_current_snippet.set("Playing snippet number " + str(self.current_snippet))
             self.button_previous.configure(state=NORMAL)
             if(self.current_snippet == self.snippet_count):
                 self.button_next.configure(state=DISABLED)
             self.stop()    
             self.play()
+
         else:
             self.text_current_snippet.set("Selected snippet number is greater than total number of snippets")
 
@@ -316,9 +369,8 @@ class App:
         message = ""
         for cat, listt in self.output_dict[str(self.current_snippet)]['categories'].items():
             message += cat.upper() + ': '
-            for keys_in_list, checker in self.output_dict[str(self.current_snippet)]['categories'][cat].items():
-                if checker:
-                    message += keys_in_list.rstrip('\n') + ', '
+            for checked_keys in self.output_dict[str(self.current_snippet)]['categories'][cat]:
+                message += checked_keys.rstrip('\n') + ', '
             message += '\n'
         self.display_selected_keys.set(message)
 
@@ -331,12 +383,14 @@ class App:
                 self.display_message()
             else:
                 self.display_selected_keys.set("")                
+
             self.text_current_snippet.set("Playing " + str(self.current_snippet))
             self.button_next.configure(state=NORMAL)
             self.stop()
             self.play()
             if(self.current_snippet == 1):
                 self.button_previous.configure(state=DISABLED)
+
         else:
             self.text_current_snippet.set("Selected snippet number is greater than total number of snippets")
 
@@ -352,14 +406,14 @@ class App:
             else:
                 self.display_selected_keys.set("")
             self.text_current_snippet.set("Selected snippet number " + str(self.current_snippet))
-            if(self.current_snippet == self.snippet_count):
-                self.button_next.configure(state=DISABLED)
-            else:
-                self.button_next.configure(state=NORMAL)
-            if(self.current_snippet == 1):
-                self.button_previous.configure(state=DISABLED)
-            else:
-                self.button_previous.configure(state=NORMAL)
+            # if(self.current_snippet == self.snippet_count):
+            #     self.button_next.configure(state=DISABLED)
+            # else:
+            #     self.button_next.configure(state=NORMAL)
+            # if(self.current_snippet == 1):
+            #     self.button_previous.configure(state=DISABLED)
+            # else:
+            #     self.button_previous.configure(state=NORMAL)
         else:
             self.text_current_snippet.set("Selected snippet number is greater than total number of snippets")
         self.textbox_goto.delete("1.0",tk.END)
@@ -373,20 +427,31 @@ class App:
         text_current_snippet.set(d)
 
     def browse(self):
+        self.stop()
         self.video_file_location = askopenfilename()
+        if(isinstance(self.video_file_location, tuple)):
+            return
+
         self.video_file_name_with_location = self.video_file_location.split('.')[0]
         self.json_file_name_with_location = self.video_file_name_with_location + '.json'
         self.output_dict = {}
         self.current_snippet = 1
+        self.text_play_button.set("PLAY")
         self.dict_keys = ["video_name", "video_category", "snippet_size", "duration", "num_snippets"]
         if path.exists(self.json_file_name_with_location):
             with open(self.json_file_name_with_location) as json_file:  
                 self.output_dict = json.load(json_file)
+            self.textbox_json.delete("1.0",tk.END)
             self.textbox_json.insert(tk.END, str(self.output_dict))
             for each_key in self.output_dict.keys():
                 if each_key not in self.dict_keys and int(each_key) > self.current_snippet:
                     self.current_snippet = int(each_key)
+            if str(self.current_snippet) in self.output_dict.keys():
+                self.display_message()
+            else:
+                self.display_selected_keys.set("")
         self.video_file_name = self.video_file_name_with_location.split('/')[-1]
+        self.window.title(self.video_file_name)
         
         self.output_dict['video_name'] = self.video_file_name
 
@@ -394,16 +459,20 @@ class App:
         if(self.video_file_extension != 'mp4' and self.video_file_extension != 'avi'):
             self.text_current_snippet.set("Chosen file is not a video file")
             return    
-        self.text_video_file_location.set(self.video_file_location)
-        self.snippet_count()
+        # self.text_video_file_location.set(self.video_file_location)
+        self.get_snippet_count()
         self.text_snippet_count.set("Total number of snippets are " + str(self.snippet_count))
         self.split_command = "python3 splitter/ffmpeg-split.py -f " + self.video_file_location + " -s " + str(self.snippet_length) + " >/dev/null 2>&1"
-        os.system(self.split_command)
         
+        self.text_video_file_location.set(self.video_file_location)
         self.text_current_snippet.set("Selected snippet number " + str(self.current_snippet))
+        os.system(self.split_command)
         self.button_play.configure(state=NORMAL)
         self.button_next.configure(state=NORMAL)
         self.button_goto.configure(state=NORMAL)
+
+        self.window.title(self.video_file_name)
+
 
 # category_keyword_dictionary = {'nouns': ['ram', 'rahim'], 'verbs': ['go', 'come']}
 config_file_location = sys.argv[1]
