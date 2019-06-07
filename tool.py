@@ -117,15 +117,18 @@ class App:
             self.textbox_category_label = tk.Label(self.window, text=self.category)
             self.textbox_category_label.grid(in_= self.container_categories, row=row_id, column=0, sticky="nsew")
 
-            var = tk.StringVar()
-            var.set("Check")
-            menu = OptionMenu(self.window, variable = var, value="options:")
+            # var = tk.StringVar()
+            # var.set("Check")
+            menu = Menubutton(self.window, text='SELECT', relief=RAISED)
+            # menu = OptionMenu(self.window, variable = var, value="options:")
             menu.grid(in_= self.container_categories, row=row_id, column=1, sticky="nsew")
+            menu.menu  =  Menu ( menu, tearoff = 0 )
+            menu["menu"]  =  menu.menu
 
             for self.keyword in self.category_keyword_dictionary[self.category]:
                 self.keyword_variable = tk.BooleanVar()
-                menu['menu'].add_checkbutton(label=self.keyword, onvalue=True, 
-                          offvalue=False, variable=self.keyword_variable)
+                menu.menu.add_checkbutton(label=self.keyword, onvalue=True, offvalue=False, variable=self.keyword_variable)
+                # menu['menu'].add_checkbutton(label=self.keyword, onvalue=True, offvalue=False, variable=self.keyword_variable)
                 self.keyword_state_per_category[self.keyword] = self.keyword_variable
                 
             self.textbox_new_keyword = tk.Text(self.window, height=2)
