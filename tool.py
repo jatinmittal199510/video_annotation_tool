@@ -139,16 +139,18 @@ class App:
 
         self.checkbutton_dict = {}
         self.new_keyword_dict = {}
+        self.all_menu_buttons = []
+        self.all_button_add_keyword = []
+        self.all_textbox_new_keyword = []
         for self.category in self.category_keyword_dictionary:
             self.keyword_state_per_category = {}
             self.checkbutton_per_category = {}
             self.textbox_category_label = tk.Label(self.window, text=self.category)
             self.textbox_category_label.grid(in_= self.container_categories, row=row_id, column=0, sticky="nsew")
 
-            # var = tk.StringVar()
-            # var.set("Check")
+            
             menu = Menubutton(self.window, text='SELECT', relief=RAISED)
-            # menu = OptionMenu(self.window, variable = var, value="options:")
+            self.all_button_add_keyword.append(menu)
             menu.grid(in_= self.container_categories, row=row_id, column=1, sticky="nsew")
             menu.menu  =  Menu ( menu, tearoff = 0 )
             menu["menu"]  =  menu.menu
@@ -156,15 +158,16 @@ class App:
             for self.keyword in self.category_keyword_dictionary[self.category]:
                 self.keyword_variable = tk.BooleanVar()
                 checkbutton = menu.menu.add_checkbutton(label=self.keyword, onvalue=True, offvalue=False, variable=self.keyword_variable)
-                # menu['menu'].add_checkbutton(label=self.keyword, onvalue=True, offvalue=False, variable=self.keyword_variable)
                 self.keyword_state_per_category[self.keyword] = self.keyword_variable
                 self.checkbutton_per_category[self.keyword] = checkbutton
                 
             self.textbox_new_keyword = tk.Text(self.window, height=2)
+            self.all_textbox_new_keyword.append(self.textbox_new_keyword)
             self.new_keyword_dict[self.category] = self.textbox_new_keyword
             self.textbox_new_keyword.grid(in_= self.container_categories, row=row_id, column=2, sticky="nsew")
             
             self.button_add_keyword = tk.Button(self.window, text='ADD KEY', command=partial(self.add_keyword,self.category))
+            self.all_button_add_keyword.append(self.button_add_keyword)
             self.button_add_keyword.grid(in_=self.container_categories, row=row_id, column=3, sticky="nsew") 
             
             
@@ -369,6 +372,32 @@ class App:
         self.textbox_goto.configure(state="normal")
         self.button_goto.configure(state=NORMAL)
 
+    def block_annotation_buttons(self):
+        for btns in self.all_button_add_keyword:
+            btns.configure(state=DISABLED)
+        for txtbx in self.all_textbox_new_keyword:
+            txtbx.configure(state="disabled")      
+        for btns in self.all_menu_buttons:
+            btns.configure(state=DISABLED)
+        self.button_same_as_previous.configure(state=DISABLED)
+        self.textbox_sentence.configure(state="disabled")      
+        self.is_snippet_transition.configure(state=DISABLED)
+        self.is_event_checkbutton.configure(state=DISABLED)
+        self.button_submit.configure(state=DISABLED)
+        
+    def unblock_annotation_buttons(self):
+        for btns in self.all_button_add_keyword:
+            btns.configure(state=NORMAL)
+        for txtbx in self.all_textbox_new_keyword:
+            txtbx.configure(state="normal")      
+        for btns in self.all_menu_buttons:
+            btns.configure(state=NORMAL)
+        self.button_same_as_previous.configure(state=NORMAL)
+        self.textbox_sentence.configure(state="normal")      
+        self.is_snippet_transition.configure(state=NORMAL)
+        self.is_event_checkbutton.configure(state=NORMAL)
+        self.button_submit.configure(state=NORMAL)
+
     def resize(image):
         im = image
         new_siz = siz
@@ -376,7 +405,6 @@ class App:
         return im
 
     def pause(self):
-        print(self.flag_to_pause_video)
         if(self.flag_to_pause_video):
             self.flag_to_pause_video = False
         else:
@@ -469,6 +497,10 @@ class App:
         self.stop()
         if(self.current_snippet < self.snippet_count):
             self.current_snippet += 1
+            if str(self.current_snippet-1) not in self.output_dict.keys():
+                self.block_annotation_buttons()
+            else:
+                self.unblock_annotation_buttons()
             if str(self.current_snippet) in self.output_dict.keys():
                 self.display_message()
             else:
@@ -500,6 +532,10 @@ class App:
         self.stop()
         if(self.current_snippet > 1):
             self.current_snippet -= 1
+            if str(self.current_snippet-1) not in self.output_dict.keys():
+                self.block_annotation_buttons()
+            else:
+                self.unblock_annotation_buttons()
             if str(self.current_snippet) in self.output_dict.keys():
                 self.display_message()
             else:
@@ -523,6 +559,12 @@ class App:
         self.stop()
         if(self.goto_snippet <= self.snippet_count):
             self.current_snippet = self.goto_snippet
+            if self.current_snippet == 1:
+                self.unblock_annotation_buttons()
+            elif str(self.current_snippet-1) not in self.output_dict.keys():
+                self.block_annotation_buttons()
+            else:
+                self.unblock_annotation_buttons()
             if str(self.current_snippet) in self.output_dict.keys():
                 self.display_message()
             else:
@@ -588,9 +630,11 @@ class App:
         self.text_video_file_location.set(self.video_file_location)
         self.text_current_snippet.set("Selected snippet number " + str(self.current_snippet))
         os.system(self.split_command)
-        if(self.current_snippet > 1):
-            self.button_previous.configure(state=NORMAL)    
         self.unblock_video_buttons()
+        if(self.current_snippet > 1):
+            self.button_same_as_previous.configure(state=NORMAL) 
+        else:
+            self.button_previous.configure(state=DISABLED) 
 
         self.window.title(self.video_file_name)
         self.restore_checklist()
