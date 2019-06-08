@@ -66,7 +66,7 @@ class App:
         self.textbox_goto = tk.Text(self.window, height=2)
         self.text_play_button = tk.StringVar()
 
-        self.textbox_json = tk.Text(self.window)
+
         self.button_browse = tk.Button(self.window, text='LOAD VIDEO', command=self.browse)
 
         self.button_play = tk.Button(self.window, textvariable=self.text_play_button, state=DISABLED, command=self.play)
@@ -97,6 +97,15 @@ class App:
         
         
         self.container_video.grid(row=0, column=0, sticky="nsew")
+        ############################################
+
+        self.container_middle = tk.Frame(self.window)
+        self.container_middle.grid(row=0, column=1, sticky="nsew")
+        self.container_middle.grid_columnconfigure(0, weight=1, uniform="group1")
+        self.container_middle.grid_columnconfigure(1, weight=1, uniform="group1")
+        self.container_middle.grid_columnconfigure(2, weight=1, uniform="group1")
+        self.container_middle.grid_columnconfigure(3, weight=1, uniform="group1")
+        
 
         self.create_checklist()
 
@@ -266,6 +275,7 @@ class App:
 
     def submit(self):
         category_caption_dict = {}
+
         if(self.is_snippet_transition_var.get()):
             self.textbox_json.delete("1.0",tk.END)
             category_caption_dict['transition'] = True
@@ -328,7 +338,7 @@ class App:
         with open(self.video_file_name_with_location + '.json', 'w') as fp:
             json.dump(self.output_dict, fp)
         self.textbox_json.insert(tk.END, str(self.output_dict))
-        
+
 
     def same_as_previous(self):
         # self.restore_checklist_with_previous_snippet()
@@ -549,7 +559,11 @@ class App:
             with open(self.json_file_name_with_location) as json_file:  
                 self.output_dict = json.load(json_file)
             self.textbox_json.delete("1.0",tk.END)
-            self.textbox_json.insert(tk.END, str(self.output_dict))
+
+            self.textbox_json.configure(state=NORMAL)
+            self.textbox_json.insert(tk.END, json.dumps(self.output_dict, indent=4))
+            self.textbox_json.configure(state=DISABLED)
+
             for each_key in self.output_dict.keys():
                 if each_key not in self.dict_keys and int(each_key) > self.current_snippet:
                     self.current_snippet = int(each_key)
@@ -586,7 +600,6 @@ class App:
 config_file_location = sys.argv[1]
 with open(config_file_location) as json_file:  
     config_file_dictionary = json.load(json_file)
-
 
 snippet_length = config_file_dictionary["snippet_size"]
 category_keyword_dictionary = config_file_dictionary["category_keywords"]
