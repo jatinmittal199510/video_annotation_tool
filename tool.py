@@ -1,5 +1,6 @@
 import tkinter
 import tkinter as tk
+from tkinter import ttk
 import cv2
 import PIL.Image, PIL.ImageTk
 import time
@@ -47,7 +48,9 @@ class App:
 
         ##################################################################
         ## GUI design
-
+        #self.style = ttk.Style()
+        #print(self.style.theme_names())
+        #self.style.theme_use('classic')
         self.container_video = tk.Frame(self.window)
         self.container_video.grid_columnconfigure(0, weight=1, uniform="group1")
         self.container_video.grid_columnconfigure(1, weight=1, uniform="group1")
@@ -149,7 +152,7 @@ class App:
         self.textbox_new_id.grid(in_= self.container_middle, row=7, column=1, columnspan=3 , sticky="nsew")
         self.textbox_new_id.configure(state="disabled")
 
-        self.button_submit = tk.Button(self.window, text='SAVE TO JSON', command=self.submit)
+        self.button_submit = tk.Button(self.window, text='SAVE TO JSON', command=self.submit, state=DISABLED)
         self.button_submit.grid(in_= self.container_middle, row=8, column=0, columnspan=4, sticky="nsew", pady=20)
 
         ######################################################
@@ -605,6 +608,11 @@ class App:
                 for checked_keys in self.output_dict[str(self.current_snippet)]['categories'][cat]:
                     message += checked_keys.rstrip('\n') + ', '
                 message += '\n'
+        if 'mega_event' in self.output_dict[str(self.current_snippet)]: 
+            message += 'EVENT ID: ' + str(self.output_dict[str(self.current_snippet)]['mega_event']['id']) + ', '
+            message += '\n'
+            message += 'EVENT NAME: ' + str(self.output_dict[str(self.current_snippet)]['mega_event']['name']) + ', '
+            message += '\n'
         self.display_selected_keys.set(message)
 
     def previous(self):
@@ -697,8 +705,14 @@ class App:
             self.textbox_json.configure(state=DISABLED)
 
             for each_key in self.output_dict.keys():
-                if each_key not in self.dict_keys and int(each_key) > self.current_snippet:
+                if each_key not in self.dict_keys and 'mega_event' in self.output_dict[str(each_key)]:
+                    if int(self.output_dict[str(each_key)]['mega_event']['id']) > self.current_event_id:
+                        self.current_event_id = int(self.output_dict[str(each_key)]['mega_event']['id'])
+                        self.current_event_name = self.output_dict[str(each_key)]['mega_event']['name']
+                if each_key not in self.dict_keys and int(each_key) > self.current_snippet: 
                     self.current_snippet = int(each_key)
+            print(self.current_event_id,self.current_event_name)
+            self.button_previous_id_var.set("USE PREVIOUS ID: " + str(self.current_event_id) + ": " + self.current_event_name)
             if str(self.current_snippet) in self.output_dict.keys():
                 self.display_message()
             else:
@@ -734,6 +748,7 @@ class App:
 
         self.set_window_name()
         self.restore_checklist()
+        self.button_submit.configure(state=NORMAL)
 
     def get_max_done_snippet_id(self):
         max_key = 0
