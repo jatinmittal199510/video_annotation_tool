@@ -90,6 +90,7 @@ class App:
         self.button_pause.grid(in_= self.container_video, row=6 , column=2, columnspan=2,sticky="nsew")
         
         self.textbox_goto.grid(in_= self.container_video, row=7 , column=0, sticky="nsew")
+        self.textbox_goto.configure(state="disabled")
         self.button_goto.grid(in_= self.container_video, row=7 , column=1, columnspan=3, sticky="nsew")
         
         
@@ -208,20 +209,6 @@ class App:
 
             self.container_categories.grid(in_= self.container_middle, row=0, column=0, columnspan=4, sticky="nsew")
 
-    def add_category(self):
-        pass
-        # global row_id
-        # new_category = self.textbox_new_category.get("1.0", tk.END)
-        # new_category = new_category.strip()
-        # if(len(new_category) > 0):
-        #     if(new_category not in self.category_keyword_dictionary):
-        #         self.category_keyword_dictionary[new_category] = [] 
-        # with open(config_file_location, 'w') as fp:
-        #     json.dump(self.category_keyword_dictionary, fp)
-        # self.container_categories.destroy()
-        # row_id = 0
-        # self.create_checklist()
-
     def add_keyword(self, category):
         global row_id
         print(category)
@@ -250,17 +237,19 @@ class App:
         else:
             messagebox.showwarning("Error", "Enter a keyword first")
         
-    def generate_new_id(self):
-        self.current_event_id += 1
+    def radiobutton_click(self):
+        if self.radio_button_var.get()==1:
+            self.textbox_new_id.configure(state="normal")
+        else:
+            self.textbox_new_id.configure(state="disabled")
 
-    def use_previous_id(self):
-        print("use previous id")  
 
     def checked_checkbutton(self):
         #print(self.is_event_checkbutton_var.get())
         if(self.is_event_checkbutton_var.get()):
             self.button_generate_new_id.configure(state=NORMAL)
-            self.textbox_new_id.configure(state="normal")
+            if self.radio_button_var.get()==1:
+                self.textbox_new_id.configure(state="normal")
             if(self.current_event_id > 0):
                 self.button_previous_id.configure(state=NORMAL)
         else:
@@ -313,15 +302,15 @@ class App:
                             answer_en = messagebox.askyesno("Question",prompt_message_en)
                             if answer_en:
                                 self.current_event_name = self.textbox_new_id.get("1.0",tk.END).rstrip('\n')
-                                self.mega_event_dic["id"] = temp_event_id
-                                self.mega_event_dic["name"] = self.current_event_name
                     else:
                         self.current_event_id += 1
                         self.current_event_name = self.textbox_new_id.get("1.0",tk.END).rstrip('\n')
                         self.button_previous_id_var.set("USE PREVIOUS ID: " + str(self.current_event_id) + ": " + self.current_event_name)
                         self.mega_event_dic["id"] = self.current_event_id
                         self.mega_event_dic["name"] = self.current_event_name
-                
+                else:
+                    self.mega_event_dic["id"] = self.current_event_id
+                    self.mega_event_dic["name"] = self.current_event_name
                 category_caption_dict['mega_event'] = self.mega_event_dic
             if str(self.current_snippet) in self.output_dict.keys():
                 self.display_message()
@@ -332,6 +321,7 @@ class App:
         self.output_dict[str(self.current_snippet)] = category_caption_dict
         with open(self.video_file_name_with_location + '.json', 'w') as fp:
             json.dump(self.output_dict, fp)
+
         self.textbox_json.insert(tk.END, json.dumps(self.output_dict, indent=4))
 
     def same_as_previous(self):
@@ -346,21 +336,22 @@ class App:
                     self.keyword_state_dict[category][keyword].set(True)
                 message += '\n'
             self.display_selected_keys.set(message)
-        # if(str(self.current_snippet - 1) in self.output_dict):
-        #     self.textbox_json.delete("1.0",tk.END)
-        #     self.output_dict[str(self.current_snippet)] = self.output_dict[str(self.current_snippet - 1)]
-        #     message = ""
-        #     for cat, listt in self.output_dict[str(self.current_snippet - 1)]['categories'].items():
-        #         message += cat.upper() + ': '
-        #         for keys_in_list, checker in self.output_dict[str(self.current_snippet -1)]['categories'][cat].items():
-        #             if checker:
-        #                 message += keys_in_list + ', '
-        #     self.display_selected_keys.set(message)
-        #     with open(self.video_file_name_with_location + '.json', 'w') as fp:
-        #         json.dump(self.output_dict, fp)
-        #     self.textbox_json.insert(tk.END, str(self.output_dict))
-        # else:
-        #     self.display_selected_keys.set("")
+        
+    def block_video_buttons(self):
+        self.button_next.configure(state=DISABLED)
+        self.button_browse.configure(state=DISABLED)
+        self.button_previous.configure(state=DISABLED)
+        self.button_play.configure(state=DISABLED)
+        self.textbox_goto.configure(state="disabled")
+        self.button_goto.configure(state=DISABLED)
+
+    def unblock_video_buttons(self):
+        self.button_next.configure(state=NORMAL)
+        self.button_browse.configure(state=NORMAL)
+        self.button_previous.configure(state=NORMAL)
+        self.button_play.configure(state=NORMAL)
+        self.textbox_goto.configure(state="normal")
+        self.button_goto.configure(state=NORMAL)
 
     def resize(image):
         im = image
@@ -369,6 +360,7 @@ class App:
         return im
 
     def pause(self):
+        print(self.flag_to_pause_video)
         if(self.flag_to_pause_video):
             self.flag_to_pause_video = False
         else:
@@ -393,7 +385,8 @@ class App:
             if(self.flag_to_pause_video):
                 continue
             ret, frame = self.snippet_capture.read()
-            if(ret == True and not self.flag_to_stop_video):
+            #if(ret == True and not self.flag_to_stop_video):
+            if ret:
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
                 height, width, layers =  frame.shape
 
@@ -411,6 +404,9 @@ class App:
                 # cv2.waitKey(0)
                 time.sleep(1/40)
             else:
+                self.unblock_video_buttons()
+                self.button_pause.configure(state=DISABLED)
+                self.flag_to_pause_video = False
                 break
         self.snippet_capture.release()
 
@@ -437,8 +433,11 @@ class App:
         self.flag_to_stop_video = False
         if(self.current_snippet <= self.snippet_count):
             self.text_current_snippet.set("Playing snippet number " + str(self.current_snippet))
-            self.thread = threading.Thread(target=self.play_snippet)
+            self.block_video_buttons()
+            self.button_pause.configure(state=NORMAL)
             self.text_play_button.set("REPLAY")
+
+            self.thread = threading.Thread(target=self.play_snippet)
 
             if str(self.current_snippet) in self.output_dict.keys():
                 self.display_message()
@@ -460,7 +459,7 @@ class App:
                 self.display_selected_keys.set("")
 
             self.text_current_snippet.set("Playing snippet number " + str(self.current_snippet))
-            self.button_previous.configure(state=NORMAL)
+            #self.button_previous.configure(state=NORMAL)
             if(self.current_snippet == self.snippet_count):
                 self.button_next.configure(state=DISABLED)
             self.stop()    
@@ -512,16 +511,10 @@ class App:
                 self.display_message()
             else:
                 self.display_selected_keys.set("")
-            self.text_current_snippet.set("Selected snippet number " + str(self.current_snippet))
-            # if(self.current_snippet == self.snippet_count):
-            #     self.button_next.configure(state=DISABLED)
-            # else:
-            #     self.button_next.configure(state=NORMAL)
-            # if(self.current_snippet == 1):
-            #     self.button_previous.configure(state=DISABLED)
-            # else:
-            #     self.button_previous.configure(state=NORMAL)
+            self.text_current_snippet.set("Playing snippet number " + str(self.current_snippet))
             self.restore_checklist()
+            self.stop()
+            self.play()
         else:
             self.text_current_snippet.set("Selected snippet number is greater than total number of snippets")
         self.textbox_goto.delete("1.0",tk.END)
@@ -579,9 +572,9 @@ class App:
         self.text_video_file_location.set(self.video_file_location)
         self.text_current_snippet.set("Selected snippet number " + str(self.current_snippet))
         os.system(self.split_command)
-        self.button_play.configure(state=NORMAL)
-        self.button_next.configure(state=NORMAL)
-        self.button_goto.configure(state=NORMAL)
+        if(self.current_snippet > 1):
+            self.button_previous.configure(state=NORMAL)    
+        self.unblock_video_buttons()
 
         self.window.title(self.video_file_name)
         self.restore_checklist()
