@@ -72,7 +72,9 @@ class App:
         self.text_play_button.set("PLAY")
         self.button_previous = tk.Button(self.window, text='PLAY PREVIOUS', state=DISABLED, command=self.previous) 
         self.button_next = tk.Button(self.window, text='PLAY NEXT', state=DISABLED, command=self.next)
-        self.button_pause = tk.Button(self.window, text='PAUSE', state=DISABLED, command=self.pause)
+        self.text_pause_button = tk.StringVar()
+        self.text_pause_button.set("PAUSE")
+        self.button_pause = tk.Button(self.window, textvariable=self.text_pause_button, state=DISABLED, command=self.pause)
         self.button_goto = tk.Button(self.window, text='GOTO N', state=DISABLED, command=self.goto)
         
         self.label_video.grid(in_= self.container_video, row=0 , column=0, columnspan=4, sticky="nsew")
@@ -84,10 +86,10 @@ class App:
 
         self.button_browse.grid(in_= self.container_video, row=4 , column=0, columnspan=4, sticky="nsew")
         self.button_play.grid(in_= self.container_video, row=5 , column=0,columnspan=2,sticky="nsew")
-        self.button_previous.grid(in_= self.container_video, row=5 , column=2, columnspan=2,sticky="nsew")
-        
-        self.button_next.grid(in_= self.container_video, row=6 , column=0, columnspan=2,sticky="nsew")
-        self.button_pause.grid(in_= self.container_video, row=6 , column=2, columnspan=2,sticky="nsew")
+        self.button_pause.grid(in_= self.container_video, row=5 , column=2, columnspan=2,sticky="nsew")
+
+        self.button_previous.grid(in_= self.container_video, row=6 , column=0, columnspan=2,sticky="nsew")
+        self.button_next.grid(in_= self.container_video, row=6 , column=2, columnspan=2,sticky="nsew")
         
         self.textbox_goto.grid(in_= self.container_video, row=7 , column=0, sticky="nsew")
         self.textbox_goto.configure(state="disabled")
@@ -130,12 +132,14 @@ class App:
         self.is_event_checkbutton.grid(in_= self.container_middle, row=4, column=0, columnspan=4, sticky="nsew")
 
         self.radio_button_var = IntVar()
-        self.button_generate_new_id = Radiobutton(self.window, text='GENERATE NEW EVENT ID', variable=self.radio_button_var, value=1,anchor="w",state=DISABLED)
+        self.button_generate_new_id = Radiobutton(self.window, text='GENERATE NEW EVENT ID', variable=self.radio_button_var, value=1,
+                                                        anchor="w",state=DISABLED,command=self.radiobutton_click)
         self.button_generate_new_id.grid(in_= self.container_middle, row=5, column=0, columnspan=4, sticky="nsew") 
 
         self.button_previous_id_var = tk.StringVar()
         self.button_previous_id_var.set("USE PREVIOUS ID: " + str(self.current_event_id) + ": " + self.current_event_name)
-        self.button_previous_id = Radiobutton(self.window, textvariable=self.button_previous_id_var, variable=self.radio_button_var, value=2,anchor="w",state=DISABLED)
+        self.button_previous_id = Radiobutton(self.window, textvariable=self.button_previous_id_var, variable=self.radio_button_var, value=2,
+                                                    anchor="w",state=DISABLED,command=self.radiobutton_click)
         self.button_previous_id.grid(in_= self.container_middle, row=6, column=0, columnspan=4, sticky="nsew")
         
         self.caption_label = tk.Label(self.window, text="Event Name:")
@@ -281,7 +285,6 @@ class App:
                 elif(self.radio_button_var.get()==1 and self.textbox_new_id.get("1.0",tk.END).strip() == ""):
                     messagebox.showwarning("Error", "Give some event name!")
                     return
-            self.textbox_json.delete("1.0",tk.END)
             category_dict = {}
             category_caption_dict['transition'] = False
             for category in self.keyword_state_dict:
@@ -292,12 +295,16 @@ class App:
                 if len(keyword_dict)>0:
                     category_dict[category] = keyword_dict
             category_caption_dict['categories'] = category_dict
+            if(len(category_caption_dict['categories'])==0):
+                messagebox.showwarning("Error", "You must add some keywords to non-transition snippets!")
+                return
+            self.textbox_json.delete("1.0",tk.END)
             if(self.textbox_sentence.get("1.0",tk.END).rstrip('\n') != ""):
                 category_caption_dict['caption'] = self.textbox_sentence.get("1.0",tk.END).rstrip('\n')
             if(self.is_event_checkbutton_var.get()):
                 self.mega_event_dic = {}
                 if(self.radio_button_var.get()==1):
-                    if 'mega_event' in self.output_dict[str(self.current_snippet)]:
+                    if str(self.current_snippet) in self.output_dict and 'mega_event' in self.output_dict[str(self.current_snippet)]:
                         temp_event_id =  self.output_dict[str(self.current_snippet)]['mega_event']['id']
                         temp_event_name =  self.output_dict[str(self.current_snippet)]['mega_event']['name']
                         prompt_message = "In current snippet, event id is " + str(temp_event_id) + ", do you want to update ?"
@@ -313,6 +320,11 @@ class App:
                             answer_en = messagebox.askyesno("Question",prompt_message_en)
                             if answer_en:
                                 self.current_event_name = self.textbox_new_id.get("1.0",tk.END).rstrip('\n')
+                                self.mega_event_dic["id"] = self.current_event_id
+                                self.mega_event_dic["name"] = self.current_event_name
+                            else:
+                                self.mega_event_dic["id"] = temp_event_id
+                                self.mega_event_dic["name"] = temp_event_name   
                     else:
                         self.current_event_id += 1
                         self.current_event_name = self.textbox_new_id.get("1.0",tk.END).rstrip('\n')
@@ -378,6 +390,9 @@ class App:
         self.is_snippet_transition.configure(state=DISABLED)
         self.is_event_checkbutton.configure(state=DISABLED)
         self.button_submit.configure(state=DISABLED)
+        self.button_generate_new_id.configure(state=DISABLED)
+        self.button_previous_id.configure(state=DISABLED)
+        self.textbox_new_id.configure(state=DISABLED)
         
     def unblock_annotation_buttons(self):
         for btns in self.all_button_add_keyword:
@@ -400,8 +415,10 @@ class App:
 
     def pause(self):
         if(self.flag_to_pause_video):
+            self.text_pause_button.set("PAUSE")
             self.flag_to_pause_video = False
         else:
+            self.text_pause_button.set("RESUME")
             self.flag_to_pause_video = True
 
     def restore_checklist(self):
@@ -443,7 +460,12 @@ class App:
                 time.sleep(1/40)
             else:
                 self.unblock_video_buttons()
+                self.text_pause_button.set("PAUSE")
                 self.button_pause.configure(state=DISABLED)
+                if(self.current_snippet == self.snippet_count):
+                    self.button_next.configure(state=DISABLED)
+                if(self.current_snippet == 1):
+                    self.button_previous.configure(state=DISABLED)
                 self.flag_to_pause_video = False
                 break
         self.snippet_capture.release()
@@ -491,6 +513,8 @@ class App:
         self.stop()
         if(self.current_snippet < self.snippet_count):
             self.current_snippet += 1
+            if (self.current_snippet == self.snippet_count):
+                self.button_next.configure(state=DISABLED) 
             if str(self.current_snippet-1) not in self.output_dict.keys():
                 self.block_annotation_buttons()
             else:
@@ -526,10 +550,13 @@ class App:
         self.stop()
         if(self.current_snippet > 1):
             self.current_snippet -= 1
-            if str(self.current_snippet-1) not in self.output_dict.keys():
+            if(self.current_snippet==1):
+                self.unblock_annotation_buttons()
+            elif str(self.current_snippet-1) not in self.output_dict.keys():
                 self.block_annotation_buttons()
             else:
                 self.unblock_annotation_buttons()
+
             if str(self.current_snippet) in self.output_dict.keys():
                 self.display_message()
             else:
@@ -553,6 +580,8 @@ class App:
         self.stop()
         if(self.goto_snippet <= self.snippet_count):
             self.current_snippet = self.goto_snippet
+            if (self.current_snippet == self.snippet_count):
+                self.button_next.configure(state=DISABLED) 
             if self.current_snippet == 1:
                 self.unblock_annotation_buttons()
             elif str(self.current_snippet-1) not in self.output_dict.keys():
@@ -586,6 +615,9 @@ class App:
             return
 
         self.video_file_name_with_location = self.video_file_location.split('.')[0]
+        self.textbox_json.configure(state=NORMAL)
+        self.textbox_json.delete("1.0",tk.END)
+        self.textbox_json.configure(state=DISABLED)
         self.json_file_name_with_location = self.video_file_name_with_location + '.json'
         self.output_dict = {}
         self.current_snippet = 1
@@ -609,14 +641,18 @@ class App:
                 self.display_selected_keys.set("")
         self.video_file_name = self.video_file_name_with_location.split('/')[-1]
         self.window.title(self.video_file_name)
-        
-        self.output_dict['video_name'] = self.video_file_name
+        self.get_snippet_count()
+        self.output_dict['video_name'] = self.video_file_location.split('/')[-1]
+        self.output_dict['video_category'] = self.video_file_name.split('_')[0]
+        self.output_dict['snippet_size'] = self.snippet_length
+        self.output_dict['num_snippets'] = self.snippet_count
+        self.output_dict['duration'] = self.video_length
 
         self.video_file_extension = self.video_file_location.split('.')[1]
         if(self.video_file_extension != 'mp4' and self.video_file_extension != 'avi'):
             self.text_current_snippet.set("Chosen file is not a video file")
             return    
-        # self.text_video_file_location.set(self.video_file_location)
+        
         self.get_snippet_count()
         self.text_snippet_count.set("Total number of snippets are " + str(self.snippet_count))
         self.split_command = "python3 splitter/ffmpeg-split.py -f " + self.video_file_location + " -s " + str(self.snippet_length) + " >/dev/null 2>&1"
@@ -627,6 +663,8 @@ class App:
         self.unblock_video_buttons()
         if(self.current_snippet > 1):
             self.button_same_as_previous.configure(state=NORMAL) 
+            if(self.current_snippet == self.snippet_count):
+                self.button_next.configure(state=DISABLED)     
         else:
             self.button_previous.configure(state=DISABLED) 
 
@@ -634,7 +672,7 @@ class App:
         self.restore_checklist()
 
 
-# category_keyword_dictionary = {'nouns': ['ram', 'rahim'], 'verbs': ['go', 'come']}
+
 config_file_location = sys.argv[1]
 with open(config_file_location) as json_file:  
     config_file_dictionary = json.load(json_file)
