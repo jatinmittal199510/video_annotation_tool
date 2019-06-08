@@ -35,14 +35,13 @@ class App:
         self.window.title('Video Annotation')
         self.category_keyword_dictionary = category_keyword_dictionary
 
-        self.checkbutton_var_count = 0
         self.flag_to_stop_video = False
         self.flag_to_pause_video = 0
         self.snippet_length = snippet_length
 
         self.keyword_state_dict = {}
 
-        self.current_event_id = 1
+        self.current_event_id = 5
         self.current_event_name = "_"
         
 
@@ -66,8 +65,6 @@ class App:
         self.textbox_current_snippet = tk.Label(self.window, textvariable=self.text_current_snippet)
         self.textbox_goto = tk.Text(self.window, height=2)
         self.text_play_button = tk.StringVar()
-
-        # self.textbox_json = tk.Text(self.window, state=DISABLED)
 
         self.button_browse = tk.Button(self.window, text='LOAD VIDEO', command=self.browse)
 
@@ -107,18 +104,18 @@ class App:
         self.container_middle.grid_columnconfigure(1, weight=1, uniform="group1")
         self.container_middle.grid_columnconfigure(2, weight=1, uniform="group1")
         self.container_middle.grid_columnconfigure(3, weight=1, uniform="group1")
-        
+
         self.create_checklist()
-        
+
         self.text_sentence_label = tk.StringVar()
         self.textbox_sentence_label = tk.Label(self.window, textvariable=self.text_sentence_label)
-        self.textbox_sentence_label.grid(in_= self.container_middle, row=1, column=0, sticky="nsew")
+        self.textbox_sentence_label.grid(in_= self.container_middle, row=1, column=0,sticky="nsew")
         self.text_sentence_label.set("Caption:")
 
         self.textbox_sentence= tk.Text(self.window, height=2)
 
         self.textbox_sentence.grid(in_= self.container_middle, row=1, column=1, columnspan=3 , sticky="nsew")
-        self.button_same_as_previous = tk.Button(self.window, text='LOAD ANNOTATIONS FROM PREVIOUS SNIPPET', state=DISABLED, command=self.same_as_previous)
+        self.button_same_as_previous = tk.Button(self.window, text='LOAD KEYWORDS AND CAPTION FROM PREVIOUS SNIPPET', state=DISABLED, command=self.same_as_previous)
         self.button_same_as_previous.grid(in_= self.container_middle, row=2, column=0, columnspan=4, sticky="nsew")        
 
         self.is_snippet_transition_var = tk.BooleanVar()
@@ -126,34 +123,31 @@ class App:
                                                         variable=self.is_snippet_transition_var, anchor="w",onvalue=True, offvalue=False)
         self.is_snippet_transition.grid(in_= self.container_middle, row=3, column=0, columnspan=4, sticky="nsew")
 
-
-        self.is_event_checkbutton = tk.Checkbutton(self.window, text="This snippet is a part of an event", 
-                                                        command=self.checked_checkbutton, anchor="w")
+        self.is_event_checkbutton_var = tk.BooleanVar()
+        self.is_event_checkbutton = tk.Checkbutton(self.window, text="This snippet is a part of an event",onvalue=True, offvalue=False,
+                                                        command=self.checked_checkbutton, anchor="w", variable=self.is_event_checkbutton_var)
         self.is_event_checkbutton.grid(in_= self.container_middle, row=4, column=0, columnspan=4, sticky="nsew")
 
-        
+        self.radio_button_var = IntVar()
+        self.button_generate_new_id = Radiobutton(self.window, text='GENERATE NEW EVENT ID', variable=self.radio_button_var, value=1,anchor="w",state=DISABLED)
+        self.button_generate_new_id.grid(in_= self.container_middle, row=5, column=0, columnspan=4, sticky="nsew") 
 
-
-        self.button_generate_new_id = tk.Button(self.window, text='GENERATE NEW EVENT ID', state=DISABLED, command=self.generate_new_id)
-        self.button_generate_new_id.grid(in_= self.container_middle, row=5, column=0, columnspan=2, sticky="nsew")        
-        
         self.button_previous_id_var = tk.StringVar()
         self.button_previous_id_var.set("USE PREVIOUS ID: " + str(self.current_event_id) + ": " + self.current_event_name)
-        self.button_previous_id = tk.Button(self.window, textvariable=self.button_previous_id_var, state=DISABLED, command=self.same_as_previous)
-        self.button_previous_id.grid(in_= self.container_middle, row=5, column=2, columnspan=2, sticky="nsew")        
-
-        self.caption_label = tk.Label(self.window, text="Event Name:")
-        self.caption_label.grid(in_= self.container_middle, row=6, column=0, sticky="nsew")
+        self.button_previous_id = Radiobutton(self.window, textvariable=self.button_previous_id_var, variable=self.radio_button_var, value=2,anchor="w",state=DISABLED)
+        self.button_previous_id.grid(in_= self.container_middle, row=6, column=0, columnspan=4, sticky="nsew")
         
-
+        self.caption_label = tk.Label(self.window, text="Event Name:")
+        self.caption_label.grid(in_= self.container_middle, row=7, column=0, sticky="nsew")
+        
         self.textbox_new_id = tk.Text(self.window, height=2)
-        self.textbox_new_id.grid(in_= self.container_middle, row=6, column=1, columnspan=3 , sticky="nsew")
+        self.textbox_new_id.grid(in_= self.container_middle, row=7, column=1, columnspan=3 , sticky="nsew")
         self.textbox_new_id.configure(state="disabled")
 
         self.button_submit = tk.Button(self.window, text='SAVE TO JSON', command=self.submit)
-        self.button_submit.grid(in_= self.container_middle, row=7, column=0, columnspan=4, sticky="nsew", pady=20)
+        self.button_submit.grid(in_= self.container_middle, row=8, column=0, columnspan=4, sticky="nsew", pady=20)
 
-        ##############################################
+        ######################################################
         #self.display_selected_keys.set("")
 
         self.json_container = tk.Frame(self.window)
@@ -171,7 +165,6 @@ class App:
         self.window.grid_columnconfigure(1, weight=3, uniform="group1")
         self.window.grid_columnconfigure(2, weight=2, uniform="group1")
         self.window.grid_rowconfigure(0, weight=1)
-
         ## GUI design
         ##################################################################
         self.window.mainloop()
@@ -215,19 +208,30 @@ class App:
 
             self.container_categories.grid(in_= self.container_middle, row=0, column=0, columnspan=4, sticky="nsew")
 
+    def add_category(self):
+        pass
+        # global row_id
+        # new_category = self.textbox_new_category.get("1.0", tk.END)
+        # new_category = new_category.strip()
+        # if(len(new_category) > 0):
+        #     if(new_category not in self.category_keyword_dictionary):
+        #         self.category_keyword_dictionary[new_category] = [] 
+        # with open(config_file_location, 'w') as fp:
+        #     json.dump(self.category_keyword_dictionary, fp)
+        # self.container_categories.destroy()
+        # row_id = 0
+        # self.create_checklist()
+
     def add_keyword(self, category):
         global row_id
+        print(category)
         new_keyword = self.new_keyword_dict[category].get("1.0", tk.END)
         new_keyword = new_keyword.strip()
         if(len(new_keyword) > 0):
             if(new_keyword not in self.category_keyword_dictionary[category]):
                 self.category_keyword_dictionary[category].append(new_keyword)
-                modified_config = {}
-                modified_config["snippet_size"] = self.snippet_length
-                modified_config["category_keywords"] = self.category_keyword_dictionary
-
                 with open(config_file_location, 'w') as fp:
-                    json.dump(modified_config, fp)
+                    json.dump(self.category_keyword_dictionary, fp)
                 self.container_categories.destroy()
                 row_id = 0
                 keyword_state_dict_copy = {}
@@ -236,14 +240,10 @@ class App:
                     for keyword in self.keyword_state_dict[category]:
                         keyword_state_per_category_copy[keyword] = self.keyword_state_dict[category][keyword].get()
                     keyword_state_dict_copy[category] = keyword_state_per_category_copy
-                # caption = self.textbox_sentence.get("1.0",tk.END).strip()
-
                 self.create_checklist()
                 for category in keyword_state_dict_copy:
                     for keyword in keyword_state_dict_copy[category]:
                         self.keyword_state_dict[category][keyword].set(keyword_state_dict_copy[category][keyword])
-                # self.textbox_sentence.set(caption)
-                # self.textbox_sentence.insert(tk.END, caption)
                 
             else:
                 messagebox.showwarning("Error", "Keyword already exists!")
@@ -257,8 +257,8 @@ class App:
         print("use previous id")  
 
     def checked_checkbutton(self):
-        self.checkbutton_var_count += 1
-        if (self.checkbutton_var_count%2)==1:
+        #print(self.is_event_checkbutton_var.get())
+        if(self.is_event_checkbutton_var.get()):
             self.button_generate_new_id.configure(state=NORMAL)
             self.textbox_new_id.configure(state="normal")
             if(self.current_event_id > 0):
@@ -269,30 +269,73 @@ class App:
             self.textbox_new_id.configure(state="disabled")
 
     def submit(self):
-        self.textbox_json.delete("1.0",tk.END)
         category_caption_dict = {}
-        category_dict = {}
-        for category in self.keyword_state_dict:
-            keyword_dict = []
-            for keyword in self.keyword_state_dict[category]:
-                if self.keyword_state_dict[category][keyword].get():
-                    keyword_dict.append(keyword)
-            category_dict[category] = keyword_dict
-        category_caption_dict['categories'] = category_dict
-        category_caption_dict['caption'] = self.textbox_sentence.get("1.0",tk.END).rstrip('\n')
-        
+
+        if(self.is_snippet_transition_var.get()):
+            self.textbox_json.delete("1.0",tk.END)
+            category_caption_dict['transition'] = True
+        else:
+            if(self.is_event_checkbutton_var.get()):
+                
+                if(self.radio_button_var.get()==0):
+                    messagebox.showwarning("Error", "Either generate new event id or select the previous event id!")
+                    return
+                elif(self.radio_button_var.get()==1 and self.textbox_new_id.get("1.0",tk.END).strip() == ""):
+                    messagebox.showwarning("Error", "Give some event name!")
+                    return
+            self.textbox_json.delete("1.0",tk.END)
+            category_dict = {}
+            category_caption_dict['transition'] = False
+            for category in self.keyword_state_dict:
+                keyword_dict = []
+                for keyword in self.keyword_state_dict[category]:
+                    if self.keyword_state_dict[category][keyword].get():
+                        keyword_dict.append(keyword)
+                category_dict[category] = keyword_dict
+            category_caption_dict['categories'] = category_dict
+            category_caption_dict['caption'] = self.textbox_sentence.get("1.0",tk.END).rstrip('\n')
+            if(self.is_event_checkbutton_var.get()):
+                self.mega_event_dic = {}
+                if(self.radio_button_var.get()==1):
+                    if 'mega_event' in self.output_dict[str(self.current_snippet)]:
+                        temp_event_id =  self.output_dict[str(self.current_snippet)]['mega_event']['id']
+                        temp_event_name =  self.output_dict[str(self.current_snippet)]['mega_event']['name']
+                        prompt_message = "In current snippet, event id is " + str(temp_event_id) + ", do you want to update ?"
+                        answer = messagebox.askyesno("Question",prompt_message)
+                        if answer:
+                            self.current_event_id += 1
+                            self.current_event_name = self.textbox_new_id.get("1.0",tk.END).rstrip('\n')
+                            self.button_previous_id_var.set("USE PREVIOUS ID: " + str(self.current_event_id) + ": " + self.current_event_name)
+                            self.mega_event_dic["id"] = self.current_event_id
+                            self.mega_event_dic["name"] = self.current_event_name
+                        else:
+                            prompt_message_en = "In current snippet, event name is '" + str(temp_event_name) + "', do you want to update ?"
+                            answer_en = messagebox.askyesno("Question",prompt_message_en)
+                            if answer_en:
+                                self.current_event_name = self.textbox_new_id.get("1.0",tk.END).rstrip('\n')
+                                self.mega_event_dic["id"] = temp_event_id
+                                self.mega_event_dic["name"] = self.current_event_name
+                    else:
+                        self.current_event_id += 1
+                        self.current_event_name = self.textbox_new_id.get("1.0",tk.END).rstrip('\n')
+                        self.button_previous_id_var.set("USE PREVIOUS ID: " + str(self.current_event_id) + ": " + self.current_event_name)
+                        self.mega_event_dic["id"] = self.current_event_id
+                        self.mega_event_dic["name"] = self.current_event_name
+                
+                category_caption_dict['mega_event'] = self.mega_event_dic
+            if str(self.current_snippet) in self.output_dict.keys():
+                self.display_message()
+            else:
+                self.display_selected_keys.set("")
+
+
         self.output_dict[str(self.current_snippet)] = category_caption_dict
         with open(self.video_file_name_with_location + '.json', 'w') as fp:
             json.dump(self.output_dict, fp)
-        self.textbox_json.configure(state=NORMAL)
         self.textbox_json.insert(tk.END, json.dumps(self.output_dict, indent=4))
-        self.textbox_json.configure(state=DISABLED)
-        if str(self.current_snippet) in self.output_dict.keys():
-            self.display_message()
-        else:
-            self.display_selected_keys.set("")
 
     def same_as_previous(self):
+        # self.restore_checklist_with_previous_snippet()
         if(str(self.current_snippet-1) in self.output_dict):
             message = ""
             currect_snippet_dict = self.output_dict[str(self.current_snippet-1)]['categories']
@@ -302,9 +345,22 @@ class App:
                     message += keyword + ', '
                     self.keyword_state_dict[category][keyword].set(True)
                 message += '\n'
-            # self.textbox_sentence.set(self.output_dict[str(self.current_snippet-1)]["caption"])
-            self.textbox_sentence.insert(tk.END, self.output_dict[str(self.current_snippet-1)]["caption"])
             self.display_selected_keys.set(message)
+        # if(str(self.current_snippet - 1) in self.output_dict):
+        #     self.textbox_json.delete("1.0",tk.END)
+        #     self.output_dict[str(self.current_snippet)] = self.output_dict[str(self.current_snippet - 1)]
+        #     message = ""
+        #     for cat, listt in self.output_dict[str(self.current_snippet - 1)]['categories'].items():
+        #         message += cat.upper() + ': '
+        #         for keys_in_list, checker in self.output_dict[str(self.current_snippet -1)]['categories'][cat].items():
+        #             if checker:
+        #                 message += keys_in_list + ', '
+        #     self.display_selected_keys.set(message)
+        #     with open(self.video_file_name_with_location + '.json', 'w') as fp:
+        #         json.dump(self.output_dict, fp)
+        #     self.textbox_json.insert(tk.END, str(self.output_dict))
+        # else:
+        #     self.display_selected_keys.set("")
 
     def resize(image):
         im = image
@@ -319,18 +375,16 @@ class App:
             self.flag_to_pause_video = True
 
     def restore_checklist(self):
-        if(str(self.current_snippet) not in self.output_dict):
+        if(str(self.current_snippet) not in self.output_dict) or 'categories' not in self.output_dict[str(self.current_snippet)]:
             for category in self.keyword_state_dict:
                 for keyword in self.keyword_state_dict[category]:
                     self.keyword_state_dict[category][keyword].set(False)
-            self.textbox_sentence.delete("1.0",tk.END)
             return
+
         currect_snippet_dict = self.output_dict[str(self.current_snippet)]['categories']
         for category in currect_snippet_dict:
             for keyword in currect_snippet_dict[category]:
                 self.keyword_state_dict[category][keyword].set(True)
-        # self.textbox_sentence.set(self.output_dict[str(self.current_snippet)]["caption"])
-        self.textbox_sentence.insert(tk.END, self.output_dict[str(self.current_snippet)]["caption"])
 
     def play_snippet(self):
         self.snippet_location = '.tmp/' + str(self.current_snippet) + '.' + str(self.video_file_extension)
@@ -343,8 +397,7 @@ class App:
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
                 height, width, layers =  frame.shape
 
-                self.window_width = self.window.winfo_screenwidth()
-                container_video_width = (self.window_width * 4) / 9
+                container_video_width = (1368 * 4) / 9
                 
                 if(width > container_video_width):
                     new_width = int(container_video_width)
@@ -397,6 +450,7 @@ class App:
             self.text_current_snippet.set("Selected snippet number is greater than total number of snippets")
         
     def next(self):
+        self.textbox_sentence.delete("1.0",tk.END)
         self.stop()
         if(self.current_snippet < self.snippet_count):
             self.current_snippet += 1
@@ -418,11 +472,12 @@ class App:
 
     def display_message(self):
         message = ""
-        for cat, listt in self.output_dict[str(self.current_snippet)]['categories'].items():
-            message += cat.upper() + ': '
-            for checked_keys in self.output_dict[str(self.current_snippet)]['categories'][cat]:
-                message += checked_keys.rstrip('\n') + ', '
-            message += '\n'
+        if 'categories' in self.output_dict[str(self.current_snippet)]: 
+            for cat, listt in self.output_dict[str(self.current_snippet)]['categories'].items():
+                message += cat.upper() + ': '
+                for checked_keys in self.output_dict[str(self.current_snippet)]['categories'][cat]:
+                    message += checked_keys.rstrip('\n') + ', '
+                message += '\n'
         self.display_selected_keys.set(message)
 
     def previous(self):
@@ -495,9 +550,11 @@ class App:
             with open(self.json_file_name_with_location) as json_file:  
                 self.output_dict = json.load(json_file)
             self.textbox_json.delete("1.0",tk.END)
+
             self.textbox_json.configure(state=NORMAL)
             self.textbox_json.insert(tk.END, json.dumps(self.output_dict, indent=4))
             self.textbox_json.configure(state=DISABLED)
+
             for each_key in self.output_dict.keys():
                 if each_key not in self.dict_keys and int(each_key) > self.current_snippet:
                     self.current_snippet = int(each_key)
