@@ -67,11 +67,7 @@ class App:
         self.textbox_goto = tk.Text(self.window, height=2)
         self.text_play_button = tk.StringVar()
 
-        self.textbox_json = tk.Text(self.window)
-        
-        scrollb = Scrollbar(self.window, command=self.textbox_json.yview)
-        scrollb.grid(row=0, column=1, sticky='nsew')
-        self.textbox_json['yscrollcommand'] = scrollb.set
+        # self.textbox_json = tk.Text(self.window, state=DISABLED)
 
         self.button_browse = tk.Button(self.window, text='LOAD VIDEO', command=self.browse)
 
@@ -103,7 +99,7 @@ class App:
         
         self.container_video.grid(row=0, column=0, sticky="nsew")
 
-        ############################################3
+        ############################################
 
         self.container_middle = tk.Frame(self.window)
         self.container_middle.grid(row=0, column=1, sticky="nsew")
@@ -279,8 +275,8 @@ class App:
         for category in self.keyword_state_dict:
             keyword_dict = []
             for keyword in self.keyword_state_dict[category]:
-            	if self.keyword_state_dict[category][keyword].get():
-                	keyword_dict.append(keyword)
+                if self.keyword_state_dict[category][keyword].get():
+                    keyword_dict.append(keyword)
             category_dict[category] = keyword_dict
         category_caption_dict['categories'] = category_dict
         category_caption_dict['caption'] = self.textbox_sentence.get("1.0",tk.END).rstrip('\n')
@@ -288,7 +284,9 @@ class App:
         self.output_dict[str(self.current_snippet)] = category_caption_dict
         with open(self.video_file_name_with_location + '.json', 'w') as fp:
             json.dump(self.output_dict, fp)
+        self.textbox_json.configure(state=NORMAL)
         self.textbox_json.insert(tk.END, json.dumps(self.output_dict, indent=4))
+        self.textbox_json.configure(state=DISABLED)
         if str(self.current_snippet) in self.output_dict.keys():
             self.display_message()
         else:
@@ -497,7 +495,9 @@ class App:
             with open(self.json_file_name_with_location) as json_file:  
                 self.output_dict = json.load(json_file)
             self.textbox_json.delete("1.0",tk.END)
+            self.textbox_json.configure(state=NORMAL)
             self.textbox_json.insert(tk.END, json.dumps(self.output_dict, indent=4))
+            self.textbox_json.configure(state=DISABLED)
             for each_key in self.output_dict.keys():
                 if each_key not in self.dict_keys and int(each_key) > self.current_snippet:
                     self.current_snippet = int(each_key)
@@ -535,7 +535,6 @@ config_file_location = sys.argv[1]
 with open(config_file_location) as json_file:  
     config_file_dictionary = json.load(json_file)
 
-print(str(config_file_dictionary))
 snippet_length = config_file_dictionary["snippet_size"]
 category_keyword_dictionary = config_file_dictionary["category_keywords"]
 
