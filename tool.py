@@ -289,9 +289,11 @@ class App:
                 for keyword in self.keyword_state_dict[category]:
                     if self.keyword_state_dict[category][keyword].get():
                         keyword_dict.append(keyword)
-                category_dict[category] = keyword_dict
+                if len(keyword_dict)>0:
+                    category_dict[category] = keyword_dict
             category_caption_dict['categories'] = category_dict
-            category_caption_dict['caption'] = self.textbox_sentence.get("1.0",tk.END).rstrip('\n')
+            if(self.textbox_sentence.get("1.0",tk.END).rstrip('\n') != ""):
+                category_caption_dict['caption'] = self.textbox_sentence.get("1.0",tk.END).rstrip('\n')
             if(self.is_event_checkbutton_var.get()):
                 self.mega_event_dic = {}
                 if(self.radio_button_var.get()==1):
