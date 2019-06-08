@@ -66,7 +66,6 @@ class App:
         self.textbox_goto = tk.Text(self.window, height=2)
         self.text_play_button = tk.StringVar()
 
-
         self.button_browse = tk.Button(self.window, text='LOAD VIDEO', command=self.browse)
 
         self.button_play = tk.Button(self.window, textvariable=self.text_play_button, state=DISABLED, command=self.play)
@@ -97,6 +96,7 @@ class App:
         
         
         self.container_video.grid(row=0, column=0, sticky="nsew")
+
         ############################################
 
         self.container_middle = tk.Frame(self.window)
@@ -105,9 +105,51 @@ class App:
         self.container_middle.grid_columnconfigure(1, weight=1, uniform="group1")
         self.container_middle.grid_columnconfigure(2, weight=1, uniform="group1")
         self.container_middle.grid_columnconfigure(3, weight=1, uniform="group1")
-        
 
         self.create_checklist()
+
+        self.text_sentence_label = tk.StringVar()
+        self.textbox_sentence_label = tk.Label(self.window, textvariable=self.text_sentence_label)
+        self.textbox_sentence_label.grid(in_= self.container_middle, row=1, column=0,sticky="nsew")
+        self.text_sentence_label.set("Caption:")
+
+        self.textbox_sentence= tk.Text(self.window, height=2)
+
+        self.textbox_sentence.grid(in_= self.container_middle, row=1, column=1, columnspan=3 , sticky="nsew")
+        self.button_same_as_previous = tk.Button(self.window, text='LOAD KEYWORDS AND CAPTION FROM PREVIOUS SNIPPET', state=DISABLED, command=self.same_as_previous)
+        self.button_same_as_previous.grid(in_= self.container_middle, row=2, column=0, columnspan=4, sticky="nsew")        
+
+        self.is_snippet_transition_var = tk.BooleanVar()
+        self.is_snippet_transition = tk.Checkbutton(self.window, text="This snippet is a transition snippet", 
+                                                        variable=self.is_snippet_transition_var, anchor="w",onvalue=True, offvalue=False)
+        self.is_snippet_transition.grid(in_= self.container_middle, row=3, column=0, columnspan=4, sticky="nsew")
+
+        self.is_event_checkbutton_var = tk.BooleanVar()
+        self.is_event_checkbutton = tk.Checkbutton(self.window, text="This snippet is a part of an event",onvalue=True, offvalue=False,
+                                                        command=self.checked_checkbutton, anchor="w", variable=self.is_event_checkbutton_var)
+        self.is_event_checkbutton.grid(in_= self.container_middle, row=4, column=0, columnspan=4, sticky="nsew")
+
+        self.radio_button_var = IntVar()
+        self.button_generate_new_id = Radiobutton(self.window, text='GENERATE NEW EVENT ID', variable=self.radio_button_var, value=1,anchor="w",state=DISABLED)
+        self.button_generate_new_id.grid(in_= self.container_middle, row=5, column=0, columnspan=4, sticky="nsew") 
+
+        self.button_previous_id_var = tk.StringVar()
+        self.button_previous_id_var.set("USE PREVIOUS ID: " + str(self.current_event_id) + ": " + self.current_event_name)
+        self.button_previous_id = Radiobutton(self.window, textvariable=self.button_previous_id_var, variable=self.radio_button_var, value=2,anchor="w",state=DISABLED)
+        self.button_previous_id.grid(in_= self.container_middle, row=6, column=0, columnspan=4, sticky="nsew")
+        
+        self.caption_label = tk.Label(self.window, text="Event Name:")
+        self.caption_label.grid(in_= self.container_middle, row=7, column=0, sticky="nsew")
+        
+        self.textbox_new_id = tk.Text(self.window, height=2)
+        self.textbox_new_id.grid(in_= self.container_middle, row=7, column=1, columnspan=3 , sticky="nsew")
+        self.textbox_new_id.configure(state="disabled")
+
+        self.button_submit = tk.Button(self.window, text='SAVE TO JSON', command=self.submit)
+        self.button_submit.grid(in_= self.container_middle, row=8, column=0, columnspan=4, sticky="nsew", pady=20)
+
+        ######################################################
+        #self.display_selected_keys.set("")
 
         self.json_container = tk.Frame(self.window)
         self.textbox_json = tk.Text(self.window)
@@ -137,20 +179,18 @@ class App:
         self.container_categories.grid_columnconfigure(2, weight=1, uniform="group1")
         self.container_categories.grid_columnconfigure(3, weight=1, uniform="group1")
 
-        self.checkbutton_dict = {}
         self.new_keyword_dict = {}
         self.all_menu_buttons = []
         self.all_button_add_keyword = []
         self.all_textbox_new_keyword = []
         for self.category in self.category_keyword_dictionary:
             self.keyword_state_per_category = {}
-            self.checkbutton_per_category = {}
             self.textbox_category_label = tk.Label(self.window, text=self.category)
             self.textbox_category_label.grid(in_= self.container_categories, row=row_id, column=0, sticky="nsew")
 
-            
             menu = Menubutton(self.window, text='SELECT', relief=RAISED)
             self.all_button_add_keyword.append(menu)
+
             menu.grid(in_= self.container_categories, row=row_id, column=1, sticky="nsew")
             menu.menu  =  Menu ( menu, tearoff = 0 )
             menu["menu"]  =  menu.menu
@@ -158,76 +198,26 @@ class App:
             for self.keyword in self.category_keyword_dictionary[self.category]:
                 self.keyword_variable = tk.BooleanVar()
                 checkbutton = menu.menu.add_checkbutton(label=self.keyword, onvalue=True, offvalue=False, variable=self.keyword_variable)
+
                 self.keyword_state_per_category[self.keyword] = self.keyword_variable
-                self.checkbutton_per_category[self.keyword] = checkbutton
                 
             self.textbox_new_keyword = tk.Text(self.window, height=2)
             self.all_textbox_new_keyword.append(self.textbox_new_keyword)
             self.new_keyword_dict[self.category] = self.textbox_new_keyword
             self.textbox_new_keyword.grid(in_= self.container_categories, row=row_id, column=2, sticky="nsew")
             
-            self.button_add_keyword = tk.Button(self.window, text='ADD KEY', command=partial(self.add_keyword,self.category))
+
+            self.button_add_keyword = tk.Button(self.window, text='ADD KEYWORD', command=partial(self.add_keyword,self.category))
             self.all_button_add_keyword.append(self.button_add_keyword)
+
             self.button_add_keyword.grid(in_=self.container_categories, row=row_id, column=3, sticky="nsew") 
             
             
             self.keyword_state_dict[self.category] = self.keyword_state_per_category
-            self.checkbutton_dict[self.category] = self.checkbutton_per_category
             row_id += 1
 
-        self.text_sentence_label = tk.StringVar()
-        self.textbox_sentence_label = tk.Label(self.window, textvariable=self.text_sentence_label)
-        self.textbox_sentence_label.grid(in_= self.container_categories, row=row_id, column=0,sticky="nsew")
-        self.text_sentence_label.set("Caption:")
+            self.container_categories.grid(in_= self.container_middle, row=0, column=0, columnspan=4, sticky="nsew")
 
-        self.textbox_sentence= tk.Text(self.window, height=2)
-
-        self.textbox_sentence.grid(in_= self.container_categories, row=row_id, column=1, columnspan=3 , sticky="nsew")
-        self.button_same_as_previous = tk.Button(self.window, text='LOAD ANNOTATIONS FROM PREVIOUS SNIPPET', state=DISABLED, command=self.same_as_previous)
-        self.button_same_as_previous.grid(in_= self.container_categories, row=row_id+1, column=0, columnspan=4, sticky="nsew")        
-
-        self.is_snippet_transition_var = tk.BooleanVar()
-        self.is_snippet_transition = tk.Checkbutton(self.window, text="This snippet is a transition snippet", 
-                                                        variable=self.is_snippet_transition_var, anchor="w",onvalue=True, offvalue=False)
-        self.is_snippet_transition.grid(in_= self.container_categories, row=row_id+2, column=0, columnspan=4, sticky="nsew")
-
-        self.is_event_checkbutton_var = tk.BooleanVar()
-        self.is_event_checkbutton = tk.Checkbutton(self.window, text="This snippet is a part of an event",onvalue=True, offvalue=False,
-                                                        command=self.checked_checkbutton, anchor="w", variable=self.is_event_checkbutton_var)
-        self.is_event_checkbutton.grid(in_= self.container_categories, row=row_id+3, column=0, columnspan=4, sticky="nsew")
-
-        
-        
-        self.radio_button_var = IntVar()
-        self.button_generate_new_id = Radiobutton(self.window, text='GENERATE NEW EVENT ID', variable=self.radio_button_var, value=1,
-                                                anchor="w",state=DISABLED,command=self.radiobutton_click)
-        self.button_generate_new_id.grid(in_= self.container_categories, row=row_id+4, column=0, columnspan=4, sticky="nsew") 
-
-        self.button_previous_id_var = tk.StringVar()
-        self.button_previous_id_var.set("USE PREVIOUS ID: " + str(self.current_event_id) + ": " + self.current_event_name)
-        self.button_previous_id = Radiobutton(self.window, textvariable=self.button_previous_id_var, variable=self.radio_button_var, 
-                                                value=2, anchor="w",state=DISABLED,command=self.radiobutton_click)
-        self.button_previous_id.grid(in_= self.container_categories, row=row_id+5, column=0, columnspan=4, sticky="nsew")
-        
-
-        self.caption_label = tk.Label(self.window, text="Event Name:")
-        self.caption_label.grid(in_= self.container_categories, row=row_id+6, column=0, sticky="nsew")
-        
-
-        self.textbox_new_id = tk.Text(self.window, height=2)
-        self.textbox_new_id.grid(in_= self.container_categories, row=row_id+6, column=1, columnspan=3 , sticky="nsew")
-        self.textbox_new_id.configure(state="disabled")
-
-        self.button_submit = tk.Button(self.window, text='SAVE TO JSON', command=self.submit)
-        self.button_submit.grid(in_= self.container_categories, row=row_id+7, column=0, columnspan=4, sticky="nsew", pady=20)
-
-        
-        #self.display_selected_keys.set("")
-
-
-    def add_category(self):
-        pass
-        
     def add_keyword(self, category):
         global row_id
         print(category)
@@ -331,20 +321,22 @@ class App:
                     self.mega_event_dic["id"] = self.current_event_id
                     self.mega_event_dic["name"] = self.current_event_name
                 category_caption_dict['mega_event'] = self.mega_event_dic
-            if str(self.current_snippet) in self.output_dict.keys():
-                self.display_message()
-            else:
-                self.display_selected_keys.set("")
-
 
         self.output_dict[str(self.current_snippet)] = category_caption_dict
         with open(self.video_file_name_with_location + '.json', 'w') as fp:
             json.dump(self.output_dict, fp)
-        self.textbox_json.insert(tk.END, str(self.output_dict))
 
+        if str(self.current_snippet) in self.output_dict.keys():
+            self.display_message()
+        else:
+            self.display_selected_keys.set("")
+
+        self.textbox_json.configure(state=NORMAL)
+        self.textbox_json.delete("1.0",tk.END)
+        self.textbox_json.insert(tk.END, json.dumps(self.output_dict, indent=4))
+        self.textbox_json.configure(state=DISABLED)
 
     def same_as_previous(self):
-        # self.restore_checklist_with_previous_snippet()
         if(str(self.current_snippet-1) in self.output_dict):
             message = ""
             currect_snippet_dict = self.output_dict[str(self.current_snippet-1)]['categories']
@@ -411,7 +403,7 @@ class App:
             self.flag_to_pause_video = True
 
     def restore_checklist(self):
-        if(str(self.current_snippet) not in self.output_dict) or 'categories' not in self.output_dict[str(self.current_snippet)]:
+        if((str(self.current_snippet) not in self.output_dict) or 'categories' not in self.output_dict[str(self.current_snippet)]):
             for category in self.keyword_state_dict:
                 for keyword in self.keyword_state_dict[category]:
                     self.keyword_state_dict[category][keyword].set(False)
@@ -600,9 +592,9 @@ class App:
         if path.exists(self.json_file_name_with_location):
             with open(self.json_file_name_with_location) as json_file:  
                 self.output_dict = json.load(json_file)
-            self.textbox_json.delete("1.0",tk.END)
-
+            
             self.textbox_json.configure(state=NORMAL)
+            self.textbox_json.delete("1.0",tk.END)
             self.textbox_json.insert(tk.END, json.dumps(self.output_dict, indent=4))
             self.textbox_json.configure(state=DISABLED)
 
