@@ -312,20 +312,22 @@ class App:
                     self.mega_event_dic["id"] = self.current_event_id
                     self.mega_event_dic["name"] = self.current_event_name
                 category_caption_dict['mega_event'] = self.mega_event_dic
-            if str(self.current_snippet) in self.output_dict.keys():
-                self.display_message()
-            else:
-                self.display_selected_keys.set("")
-
 
         self.output_dict[str(self.current_snippet)] = category_caption_dict
         with open(self.video_file_name_with_location + '.json', 'w') as fp:
             json.dump(self.output_dict, fp)
 
+        if str(self.current_snippet) in self.output_dict.keys():
+            self.display_message()
+        else:
+            self.display_selected_keys.set("")
+
+        self.textbox_json.configure(state=NORMAL)
+        self.textbox_json.delete("1.0",tk.END)
         self.textbox_json.insert(tk.END, json.dumps(self.output_dict, indent=4))
+        self.textbox_json.configure(state=DISABLED)
 
     def same_as_previous(self):
-        # self.restore_checklist_with_previous_snippet()
         if(str(self.current_snippet-1) in self.output_dict):
             message = ""
             currect_snippet_dict = self.output_dict[str(self.current_snippet-1)]['categories']
@@ -367,7 +369,7 @@ class App:
             self.flag_to_pause_video = True
 
     def restore_checklist(self):
-        if(str(self.current_snippet) not in self.output_dict) or 'categories' not in self.output_dict[str(self.current_snippet)]:
+        if((str(self.current_snippet) not in self.output_dict) or 'categories' not in self.output_dict[str(self.current_snippet)]):
             for category in self.keyword_state_dict:
                 for keyword in self.keyword_state_dict[category]:
                     self.keyword_state_dict[category][keyword].set(False)
@@ -542,9 +544,9 @@ class App:
         if path.exists(self.json_file_name_with_location):
             with open(self.json_file_name_with_location) as json_file:  
                 self.output_dict = json.load(json_file)
-            self.textbox_json.delete("1.0",tk.END)
-
+            
             self.textbox_json.configure(state=NORMAL)
+            self.textbox_json.delete("1.0",tk.END)
             self.textbox_json.insert(tk.END, json.dumps(self.output_dict, indent=4))
             self.textbox_json.configure(state=DISABLED)
 
