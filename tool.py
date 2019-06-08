@@ -44,6 +44,8 @@ class App:
 
         self.current_event_id = 0
         self.current_event_name = "_"
+        self.current_snippet = 1
+        self.output_dict = {}
         
 
         ##################################################################
@@ -230,7 +232,6 @@ class App:
 
     def add_keyword(self, category):
         global row_id
-        print(category)
         new_keyword = self.new_keyword_dict[category].get("1.0", tk.END)
         new_keyword = new_keyword.strip()
         if(len(new_keyword) > 0):
@@ -273,7 +274,6 @@ class App:
             self.unblock_annotation_buttons()
 
     def checked_checkbutton(self):
-        #print(self.is_event_checkbutton_var.get())
         if(self.is_event_checkbutton_var.get()):
             self.button_generate_new_id.configure(state=NORMAL)
             if self.radio_button_var.get()==1:
@@ -294,7 +294,7 @@ class App:
         else:
             if(self.is_event_checkbutton_var.get()):
                 
-                if(self.radio_button_var.get()==0):
+                if(self.radio_button_var.get()==0 and str(self.current_snippet) not in self.output_dict):
                     messagebox.showwarning("Error", "Either generate new event id or select the previous event id!")
                     return
                 elif(self.radio_button_var.get()==1 and self.textbox_new_id.get("1.0",tk.END).strip() == ""):
@@ -351,7 +351,24 @@ class App:
                     self.mega_event_dic["name"] = self.current_event_name
                 category_caption_dict['mega_event'] = self.mega_event_dic
 
+        
         self.output_dict[str(self.current_snippet)] = category_caption_dict
+
+        if(str(self.current_snippet) in self.output_dict):
+            currect_snippet_dict = self.output_dict[str(self.current_snippet)]
+            if("mega_event" in currect_snippet_dict):
+                previous_event_name = currect_snippet_dict["mega_event"]["name"].rstrip('\n')
+                # print("previous_event_name = "+previous_event_name)
+                new_event_name = self.textbox_new_id.get("1.0",tk.END).strip()
+                # print("new_event_name = "+new_event_name)
+                if(previous_event_name != new_event_name):
+                    event_id = currect_snippet_dict["mega_event"]["id"]
+                    for each_key in self.output_dict.keys():
+                        if each_key not in self.dict_keys:
+                            if(self.output_dict[each_key]["mega_event"]["id"] == event_id):
+                                self.output_dict[each_key]["mega_event"]["name"] = new_event_name
+                                # print("Done")
+
         with open(self.video_file_name_with_location + '.json', 'w') as fp:
             json.dump(self.output_dict, fp)
 
@@ -359,21 +376,6 @@ class App:
             self.display_message()
         else:
             self.display_selected_keys.set("")
-
-        if(str(self.current_snippet) in self.output_dict):
-            currect_snippet_dict = self.output_dict[str(self.current_snippet)]
-            if("mega_event" in currect_snippet_dict):
-                previous_event_name = currect_snippet_dict["mega_event"]["name"].rstrip('\n')
-                print("previous_event_name = "+previous_event_name)
-                new_event_name = self.textbox_new_id.get("1.0",tk.END).strip()
-                print("new_event_name = "+new_event_name)
-                if(previous_event_name != new_event_name):
-                    event_id = currect_snippet_dict["mega_event"]["id"]
-                    for each_key in self.output_dict.keys():
-                        if each_key not in self.dict_keys:
-                            if(output_dict[each_key]["mega_event"]["id"] == event_id):
-                                output_dict[each_key]["mega_event"]["name"] = new_event_name
-                                print("Done")
 
         self.textbox_json.configure(state=NORMAL)
         self.textbox_json.delete("1.0",tk.END)
@@ -546,7 +548,7 @@ class App:
     def get_snippet_count(self):
         self.video_length = subprocess.check_output(("ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", self.video_file_location)).strip()
         self.video_length = int(float(self.video_length))
-        print("Video length in seconds: "+ str(self.video_length)) 
+        # print("Video length in seconds: "+ str(self.video_length)) 
         self.snippet_count = ceildiv(self.video_length, self.snippet_length)
 
     def stop(self):
@@ -682,14 +684,35 @@ class App:
 
     def browse(self):
         self.stop()
+        
+        ## Resetting Things
+        self.display_selected_keys.set("")
+
+        self.current_event_id = 0
+        self.current_event_name = "_"
+
+        self.button_previous_id_var.set("USE PREVIOUS ID: " + str(self.current_event_id) + ": " + self.current_event_name)
+        self.textbox_json.configure(state=NORMAL)
+        self.textbox_json.delete("1.0",tk.END)
+        self.textbox_json.configure(state=DISABLED)
+        self.restore_checklist()
+        self.text_snippet_count.set("")
+        self.text_current_snippet.set("")
+        self.textbox_new_id.delete("1.0",tk.END)
+        self.textbox_new_id.configure(state=DISABLED)
+        self.text_video_file_location.set("")
+        ##################
+
         self.video_file_location = askopenfilename()
         if(isinstance(self.video_file_location, tuple)):
             return
 
+        self.video_file_extension = self.video_file_location.split('.')[1]
+        if(self.video_file_extension != 'mp4' and self.video_file_extension != 'avi'):
+            self.text_current_snippet.set("Chosen file is not a video file")
+            return    
+
         self.video_file_name_with_location = self.video_file_location.split('.')[0]
-        self.textbox_json.configure(state=NORMAL)
-        self.textbox_json.delete("1.0",tk.END)
-        self.textbox_json.configure(state=DISABLED)
         self.json_file_name_with_location = self.video_file_name_with_location + '.json'
         self.output_dict = {}
         self.current_snippet = 1
@@ -711,7 +734,7 @@ class App:
                         self.current_event_name = self.output_dict[str(each_key)]['mega_event']['name']
                 if each_key not in self.dict_keys and int(each_key) > self.current_snippet: 
                     self.current_snippet = int(each_key)
-            print(self.current_event_id,self.current_event_name)
+            # print(self.current_event_id,self.current_event_name)
             self.button_previous_id_var.set("USE PREVIOUS ID: " + str(self.current_event_id) + ": " + self.current_event_name)
             if str(self.current_snippet) in self.output_dict.keys():
                 self.display_message()
@@ -725,11 +748,6 @@ class App:
         self.output_dict['snippet_size'] = self.snippet_length
         self.output_dict['num_snippets'] = self.snippet_count
         self.output_dict['duration'] = self.video_length
-
-        self.video_file_extension = self.video_file_location.split('.')[1]
-        if(self.video_file_extension != 'mp4' and self.video_file_extension != 'avi'):
-            self.text_current_snippet.set("Chosen file is not a video file")
-            return    
         
         self.get_snippet_count()
         self.text_snippet_count.set("Total number of snippets are " + str(self.snippet_count))
