@@ -365,14 +365,21 @@ class App:
 
     def same_as_previous(self):
         if(str(self.current_snippet-1) in self.output_dict):
+            for category in self.keyword_state_dict:
+                for keyword in self.keyword_state_dict[category]:
+                    self.keyword_state_dict[category][keyword].set(False)
             message = ""
-            currect_snippet_dict = self.output_dict[str(self.current_snippet-1)]['categories']
-            for category in currect_snippet_dict:
-                message += category.upper() + ': '
-                for keyword in currect_snippet_dict[category]:
-                    message += keyword + ', '
-                    self.keyword_state_dict[category][keyword].set(True)
-                message += '\n'
+            if('categories' in self.output_dict[str(self.current_snippet-1)]):
+                currect_snippet_dict = self.output_dict[str(self.current_snippet-1)]['categories']
+                for category in currect_snippet_dict:
+                    message += category.upper() + ': '
+                    for keyword in currect_snippet_dict[category]:
+                        message += keyword + ', '
+                        self.keyword_state_dict[category][keyword].set(True)
+                    message += '\n'
+            self.textbox_sentence.delete("1.0",tk.END)
+            if('caption' in self.output_dict[str(self.current_snippet-1)]):
+                self.textbox_sentence.insert(tk.END, self.output_dict[str(self.current_snippet-1)]['caption'])
             self.display_selected_keys.set(message)
         
     def block_video_buttons(self):
