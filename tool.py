@@ -165,6 +165,9 @@ class App:
         self.textbox_display = tk.Message(self.window, textvariable=self.display_selected_keys, anchor="c")
         self.textbox_display.grid(in_= self.json_container, row=0, column=0, sticky="nsew")
         self.textbox_json.grid(in_= self.json_container,row=1, column=0, sticky="nsew")
+        self.scroll_bar = tk.Scrollbar(self.window, command=self.textbox_json.yview)
+        self.scroll_bar.grid(in_= self.json_container,row=1, column=1, sticky='nsew')
+        self.textbox_json['yscrollcommand'] = self.scroll_bar.set
 
         self.window.grid_columnconfigure(0, weight=4, uniform="group1")
         self.window.grid_columnconfigure(1, weight=3, uniform="group1")
