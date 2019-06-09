@@ -364,7 +364,7 @@ class App:
                 if(previous_event_name != new_event_name):
                     event_id = currect_snippet_dict["mega_event"]["id"]
                     for each_key in self.output_dict.keys():
-                        if each_key not in self.dict_keys:
+                        if each_key not in self.dict_keys and 'mega_event' in self.output_dict[each_key]:
                             if(self.output_dict[each_key]["mega_event"]["id"] == event_id):
                                 self.output_dict[each_key]["mega_event"]["name"] = new_event_name
                                 # print("Done")
@@ -381,7 +381,10 @@ class App:
         self.textbox_json.delete("1.0",tk.END)
         self.textbox_json.insert(tk.END, json.dumps(self.output_dict, indent=4))
         self.textbox_json.configure(state=DISABLED)
-
+        if 'mega_event' in self.output_dict[str(self.current_snippet)]:
+            if(self.output_dict[str(self.current_snippet)]["mega_event"]["id"] == self.current_event_id):
+                self.current_event_name = self.output_dict[str(self.current_snippet)]["mega_event"]["name"]
+        self.button_previous_id_var.set("USE PREVIOUS ID: " + str(self.current_event_id) + ": " + self.current_event_name)
         self.set_window_name()
 
     def same_as_previous(self):
@@ -442,10 +445,12 @@ class App:
             txtbx.configure(state="normal")      
         for btns in self.all_menu_buttons:
             btns.configure(state=NORMAL)
-        self.button_same_as_previous.configure(state=NORMAL)
+        if(self.current_snippet>1):
+            self.button_same_as_previous.configure(state=NORMAL)
         self.textbox_sentence.configure(state="normal")      
         self.is_snippet_transition.configure(state=NORMAL)
         self.is_event_checkbutton.configure(state=NORMAL)
+        self.is_event_checkbutton_var.set(False)
         self.checked_checkbutton()
         self.button_submit.configure(state=NORMAL)
         if(str(self.current_snippet) in self.output_dict):
@@ -469,11 +474,15 @@ class App:
         for category in self.keyword_state_dict:
             for keyword in self.keyword_state_dict[category]:
                 self.keyword_state_dict[category][keyword].set(False)
+        #self.textbox_sentence.configure(state=NORMAL)
         self.textbox_sentence.delete("1.0",tk.END)
+        #self.textbox_sentence.configure(state=DISABLED)
         self.is_snippet_transition_var.set(False)
         self.is_event_checkbutton_var.set(False)
         self.radio_button_var.set(0)
+        self.textbox_new_id.configure(state=NORMAL)
         self.textbox_new_id.delete("1.0",tk.END)
+        self.textbox_new_id.configure(state=DISABLED)
 
         if(str(self.current_snippet) in self.output_dict):
             currect_snippet_dict = self.output_dict[str(self.current_snippet)]
@@ -487,6 +496,7 @@ class App:
                         for keyword in currect_snippet_categories_dict[category]:
                             self.keyword_state_dict[category][keyword].set(True)
                 if("caption" in currect_snippet_dict):
+
                     self.textbox_sentence.insert(tk.END, currect_snippet_dict["caption"])
                 if("mega_event" in currect_snippet_dict):
                     self.is_event_checkbutton_var.set(True)
