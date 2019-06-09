@@ -1,1 +1,5 @@
+<<<<<<< HEAD
 {"video_name": "video.mp4", "video_category": "video", "snippet_size": 3, "num_snippets": 10, "duration": 30, "1": {"transition": false, "categories": {"noun": ["dhiman", "e"], "verb": ["eat", "abc"], "adjective": ["gy"]}, "mega_event": {"id": 1, "name": "event 2"}}, "2": {"transition": false, "categories": {"verb": ["eat"]}, "mega_event": {"id": 1, "name": "event 2"}}, "3": {"transition": false, "categories": {"verb": ["eat"]}, "mega_event": {"id": 1, "name": "event 2"}}, "4": {"transition": false, "categories": {"verb": ["eat"]}, "mega_event": {"id": 2, "name": "guyi"}}}
+=======
+{"video_name": "video.mp4", "video_category": "video", "snippet_size": 3, "num_snippets": 10, "duration": 30, "1": {"transition": false, "categories": {"noun": ["e"]}, "mega_event": {"id": 1, "name": "hgyigj"}}, "2": {"transition": false, "categories": {"verb": ["abc"]}, "mega_event": {"id": 1, "name": "hgyigj"}}}
+>>>>>>> 7f003d729b34d38316a39ab3a49899071f09b93d

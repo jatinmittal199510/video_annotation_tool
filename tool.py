@@ -44,6 +44,8 @@ class App:
 
         self.current_event_id = 0
         self.current_event_name = "_"
+        self.current_snippet = 1
+        self.output_dict = {}
         
 
         ##################################################################
@@ -230,7 +232,6 @@ class App:
 
     def add_keyword(self, category):
         global row_id
-        print(category)
         new_keyword = self.new_keyword_dict[category].get("1.0", tk.END)
         new_keyword = new_keyword.strip()
         if(len(new_keyword) > 0):
@@ -264,6 +265,8 @@ class App:
 
     def transitionbutton_click(self):
         if self.is_snippet_transition_var.get()==1:
+            self.textbox_sentence.delete("1.0",tk.END)
+            self.textbox_new_id.delete("1.0",tk.END)
             self.block_annotation_buttons()
             self.is_snippet_transition.configure(state=NORMAL)
             self.button_submit.configure(state=NORMAL)
@@ -271,7 +274,6 @@ class App:
             self.unblock_annotation_buttons()
 
     def checked_checkbutton(self):
-        #print(self.is_event_checkbutton_var.get())
         if(self.is_event_checkbutton_var.get()):
             self.button_generate_new_id.configure(state=NORMAL)
             if self.radio_button_var.get()==1:
@@ -292,7 +294,7 @@ class App:
         else:
             if(self.is_event_checkbutton_var.get()):
                 
-                if(self.radio_button_var.get()==0):
+                if(self.radio_button_var.get()==0 and str(self.current_snippet) not in self.output_dict):
                     messagebox.showwarning("Error", "Either generate new event id or select the previous event id!")
                     return
                 elif(self.radio_button_var.get()==1 and self.textbox_new_id.get("1.0",tk.END).strip() == ""):
@@ -349,7 +351,24 @@ class App:
                     self.mega_event_dic["name"] = self.current_event_name
                 category_caption_dict['mega_event'] = self.mega_event_dic
 
+        
         self.output_dict[str(self.current_snippet)] = category_caption_dict
+
+        if(str(self.current_snippet) in self.output_dict):
+            currect_snippet_dict = self.output_dict[str(self.current_snippet)]
+            if("mega_event" in currect_snippet_dict):
+                previous_event_name = currect_snippet_dict["mega_event"]["name"].rstrip('\n')
+                # print("previous_event_name = "+previous_event_name)
+                new_event_name = self.textbox_new_id.get("1.0",tk.END).strip()
+                # print("new_event_name = "+new_event_name)
+                if(previous_event_name != new_event_name):
+                    event_id = currect_snippet_dict["mega_event"]["id"]
+                    for each_key in self.output_dict.keys():
+                        if each_key not in self.dict_keys:
+                            if(self.output_dict[each_key]["mega_event"]["id"] == event_id):
+                                self.output_dict[each_key]["mega_event"]["name"] = new_event_name
+                                # print("Done")
+
         with open(self.video_file_name_with_location + '.json', 'w') as fp:
             json.dump(self.output_dict, fp)
 
@@ -362,6 +381,8 @@ class App:
         self.textbox_json.delete("1.0",tk.END)
         self.textbox_json.insert(tk.END, json.dumps(self.output_dict, indent=4))
         self.textbox_json.configure(state=DISABLED)
+
+        self.set_window_name()
 
     def same_as_previous(self):
         if(str(self.current_snippet-1) in self.output_dict):
@@ -427,6 +448,8 @@ class App:
         self.is_event_checkbutton.configure(state=NORMAL)
         self.checked_checkbutton()
         self.button_submit.configure(state=NORMAL)
+        if(str(self.current_snippet) in self.output_dict):
+            self.is_event_checkbutton.configure(state=DISABLED)
 
     def resize(image):
         im = image
@@ -443,16 +466,38 @@ class App:
             self.flag_to_pause_video = True
 
     def restore_checklist(self):
-        if((str(self.current_snippet) not in self.output_dict) or 'categories' not in self.output_dict[str(self.current_snippet)]):
-            for category in self.keyword_state_dict:
-                for keyword in self.keyword_state_dict[category]:
-                    self.keyword_state_dict[category][keyword].set(False)
-            return
+        for category in self.keyword_state_dict:
+            for keyword in self.keyword_state_dict[category]:
+                self.keyword_state_dict[category][keyword].set(False)
+        self.textbox_sentence.delete("1.0",tk.END)
+        self.is_snippet_transition_var.set(False)
+        self.is_event_checkbutton_var.set(False)
+        self.radio_button_var.set(0)
+        self.textbox_new_id.delete("1.0",tk.END)
 
-        currect_snippet_dict = self.output_dict[str(self.current_snippet)]['categories']
-        for category in currect_snippet_dict:
-            for keyword in currect_snippet_dict[category]:
-                self.keyword_state_dict[category][keyword].set(True)
+        if(str(self.current_snippet) in self.output_dict):
+            currect_snippet_dict = self.output_dict[str(self.current_snippet)]
+            if(currect_snippet_dict["transition"]):
+                self.is_snippet_transition_var.set(True)
+                self.transitionbutton_click()
+            else:
+                if("categories" in currect_snippet_dict):
+                    currect_snippet_categories_dict = currect_snippet_dict["categories"]
+                    for category in currect_snippet_categories_dict:
+                        for keyword in currect_snippet_categories_dict[category]:
+                            self.keyword_state_dict[category][keyword].set(True)
+                if("caption" in currect_snippet_dict):
+                    self.textbox_sentence.insert(tk.END, currect_snippet_dict["caption"])
+                if("mega_event" in currect_snippet_dict):
+                    self.is_event_checkbutton_var.set(True)
+                    self.checked_checkbutton()
+                    self.is_snippet_transition.configure(state="disabled")
+                    self.is_event_checkbutton.configure(state="disabled")
+                    self.button_generate_new_id.configure(state="disabled")
+                    self.button_previous_id.configure(state="disabled")
+                    if("name" in currect_snippet_dict["mega_event"]):
+                        self.textbox_new_id.configure(state="normal")
+                        self.textbox_new_id.insert(tk.END, currect_snippet_dict["mega_event"]["name"])
 
     def play_snippet(self):
         self.snippet_location = '.tmp/' + str(self.current_snippet) + '.' + str(self.video_file_extension)
@@ -503,7 +548,7 @@ class App:
     def get_snippet_count(self):
         self.video_length = subprocess.check_output(("ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", self.video_file_location)).strip()
         self.video_length = int(float(self.video_length))
-        print("Video length in seconds: "+ str(self.video_length)) 
+        # print("Video length in seconds: "+ str(self.video_length)) 
         self.snippet_count = ceildiv(self.video_length, self.snippet_length)
 
     def stop(self):
@@ -555,6 +600,7 @@ class App:
 
         else:
             self.text_current_snippet.set("Selected snippet number is greater than total number of snippets")
+        self.set_window_name()
 
     def display_message(self):
         message = ""
@@ -598,6 +644,7 @@ class App:
 
         else:
             self.text_current_snippet.set("Selected snippet number is greater than total number of snippets")
+        self.set_window_name()
 
     def goto(self):
         self.textbox_sentence.delete("1.0",tk.END)
@@ -625,6 +672,7 @@ class App:
         else:
             self.text_current_snippet.set("Selected snippet number is greater than total number of snippets")
         self.textbox_goto.delete("1.0",tk.END)
+        self.set_window_name()
 
     def check():
         d = ""
@@ -636,14 +684,35 @@ class App:
 
     def browse(self):
         self.stop()
+        
+        ## Resetting Things
+        self.display_selected_keys.set("")
+
+        self.current_event_id = 0
+        self.current_event_name = "_"
+
+        self.button_previous_id_var.set("USE PREVIOUS ID: " + str(self.current_event_id) + ": " + self.current_event_name)
+        self.textbox_json.configure(state=NORMAL)
+        self.textbox_json.delete("1.0",tk.END)
+        self.textbox_json.configure(state=DISABLED)
+        self.restore_checklist()
+        self.text_snippet_count.set("")
+        self.text_current_snippet.set("")
+        self.textbox_new_id.delete("1.0",tk.END)
+        self.textbox_new_id.configure(state=DISABLED)
+        self.text_video_file_location.set("")
+        ##################
+
         self.video_file_location = askopenfilename()
         if(isinstance(self.video_file_location, tuple)):
             return
 
+        self.video_file_extension = self.video_file_location.split('.')[1]
+        if(self.video_file_extension != 'mp4' and self.video_file_extension != 'avi'):
+            self.text_current_snippet.set("Chosen file is not a video file")
+            return    
+
         self.video_file_name_with_location = self.video_file_location.split('.')[0]
-        self.textbox_json.configure(state=NORMAL)
-        self.textbox_json.delete("1.0",tk.END)
-        self.textbox_json.configure(state=DISABLED)
         self.json_file_name_with_location = self.video_file_name_with_location + '.json'
         self.output_dict = {}
         self.current_snippet = 1
@@ -665,7 +734,7 @@ class App:
                         self.current_event_name = self.output_dict[str(each_key)]['mega_event']['name']
                 if each_key not in self.dict_keys and int(each_key) > self.current_snippet: 
                     self.current_snippet = int(each_key)
-            print(self.current_event_id,self.current_event_name)
+            # print(self.current_event_id,self.current_event_name)
             self.button_previous_id_var.set("USE PREVIOUS ID: " + str(self.current_event_id) + ": " + self.current_event_name)
             if str(self.current_snippet) in self.output_dict.keys():
                 self.display_message()
@@ -679,11 +748,6 @@ class App:
         self.output_dict['snippet_size'] = self.snippet_length
         self.output_dict['num_snippets'] = self.snippet_count
         self.output_dict['duration'] = self.video_length
-
-        self.video_file_extension = self.video_file_location.split('.')[1]
-        if(self.video_file_extension != 'mp4' and self.video_file_extension != 'avi'):
-            self.text_current_snippet.set("Chosen file is not a video file")
-            return    
         
         self.get_snippet_count()
         self.text_snippet_count.set("Total number of snippets are " + str(self.snippet_count))
@@ -700,10 +764,20 @@ class App:
         else:
             self.button_previous.configure(state=DISABLED) 
 
-        self.window.title(self.video_file_name)
+        self.set_window_name()
         self.restore_checklist()
         self.button_submit.configure(state=NORMAL)
 
+    def get_max_done_snippet_id(self):
+        max_key = 0
+        for each_key in self.output_dict.keys():
+            if each_key not in self.dict_keys and int(each_key) > max_key:
+                max_key = int(each_key)
+        return max_key
+
+    def set_window_name(self):
+        max_done_snippet_id = self.get_max_done_snippet_id()
+        self.window.title(self.video_file_name +"."+ self.video_file_extension +" (# Annotated Snippets: "+ str(max_done_snippet_id) + " / " + str(self.snippet_count) + ")")
 
 config_file_location = sys.argv[1]
 with open(config_file_location) as json_file:  
