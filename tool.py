@@ -123,7 +123,7 @@ class App:
 
         self.is_snippet_transition_var = tk.BooleanVar()
         self.is_snippet_transition = tk.Checkbutton(self.window, text="This snippet is a transition snippet", 
-                                                        variable=self.is_snippet_transition_var, anchor="w",onvalue=True, offvalue=False)
+                                                        variable=self.is_snippet_transition_var, anchor="w",onvalue=True, offvalue=False,command=self.transitionbutton_click)
         self.is_snippet_transition.grid(in_= self.container_middle, row=3, column=0, columnspan=4, sticky="nsew")
 
         self.is_event_checkbutton_var = tk.BooleanVar()
@@ -256,6 +256,13 @@ class App:
         else:
             self.textbox_new_id.configure(state="disabled")
 
+    def transitionbutton_click(self):
+        if self.is_snippet_transition_var.get()==1:
+            self.block_annotation_buttons()
+            self.is_snippet_transition.configure(state=NORMAL)
+            self.button_submit.configure(state=NORMAL)
+        else:
+            self.unblock_annotation_buttons()
 
     def checked_checkbutton(self):
         #print(self.is_event_checkbutton_var.get())
@@ -405,6 +412,7 @@ class App:
         self.textbox_sentence.configure(state="normal")      
         self.is_snippet_transition.configure(state=NORMAL)
         self.is_event_checkbutton.configure(state=NORMAL)
+        self.checked_checkbutton()
         self.button_submit.configure(state=NORMAL)
 
     def resize(image):
