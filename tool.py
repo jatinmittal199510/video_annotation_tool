@@ -237,8 +237,9 @@ class App:
         if(len(new_keyword) > 0):
             if(new_keyword not in self.category_keyword_dictionary[category]):
                 self.category_keyword_dictionary[category].append(new_keyword)
+                config_file_dictionary["category_keywords"] = self.category_keyword_dictionary
                 with open(config_file_location, 'w') as fp:
-                    json.dump(self.category_keyword_dictionary, fp)
+                    json.dump(config_file_dictionary, fp)
                 self.container_categories.destroy()
                 row_id = 0
                 keyword_state_dict_copy = {}
