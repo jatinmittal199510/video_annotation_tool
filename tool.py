@@ -279,8 +279,9 @@ class App:
             self.button_generate_new_id.configure(state=NORMAL)
             if self.radio_button_var.get()==1:
                 self.textbox_new_id.configure(state="normal")
-            if(self.current_event_id > 0):
-                self.button_previous_id.configure(state=NORMAL)
+            if (self.current_snippet > 1 and str(self.current_snippet-1) in self.output_dict):
+                if 'mega_event' in self.output_dict[str(self.current_snippet - 1)]:
+                    self.button_previous_id.configure(state=NORMAL)
         else:
             self.button_previous_id.configure(state=DISABLED)
             self.button_generate_new_id.configure(state=DISABLED)
@@ -323,7 +324,7 @@ class App:
                     if str(self.current_snippet) in self.output_dict and 'mega_event' in self.output_dict[str(self.current_snippet)]:
                         temp_event_id =  self.output_dict[str(self.current_snippet)]['mega_event']['id']
                         temp_event_name =  self.output_dict[str(self.current_snippet)]['mega_event']['name']
-                        prompt_message = "In current snippet, event id is " + str(temp_event_id) + ", do you want to update ?"
+                        prompt_message = "In current snippet, event id is " + str(temp_event_id) + ", do you want to change it to " + str(self.current_event_id+1) +"?"
                         answer = messagebox.askyesno("Question",prompt_message)
                         if answer:
                             self.current_event_id += 1
@@ -332,7 +333,7 @@ class App:
                             self.mega_event_dic["id"] = self.current_event_id
                             self.mega_event_dic["name"] = self.current_event_name
                         else:
-                            prompt_message_en = "In current snippet, event name is '" + str(temp_event_name) + "', do you want to update ?"
+                            prompt_message_en = "In current snippet, event name is '" + str(temp_event_name) + "', do you want to change it to " + self.textbox_new_id.get("1.0",tk.END).rstrip('\n') +"?"
                             answer_en = messagebox.askyesno("Question",prompt_message_en)
                             if answer_en:
                                 self.current_event_name = self.textbox_new_id.get("1.0",tk.END).rstrip('\n')
@@ -344,12 +345,22 @@ class App:
                     else:
                         self.current_event_id += 1
                         self.current_event_name = self.textbox_new_id.get("1.0",tk.END).rstrip('\n')
-                        self.button_previous_id_var.set("USE PREVIOUS ID: " + str(self.current_event_id) + ": " + self.current_event_name)
+                        if (self.current_snippet > 1 and str(self.current_snippet-1) in self.output_dict):
+                            if 'mega_event' in self.output_dict[str(self.current_snippet - 1)]:
+                                temp_event_id = int(self.output_dict[str(self.current_snippet - 1)]['mega_event']['id'])
+                                temp_event_name = self.output_dict[str(self.current_snippet - 1)]['mega_event']['name']
+                                self.button_previous_id_var.set("USE PREVIOUS ID: " + str(temp_event_id) + ": " + temp_event_name)
+                            
+                        #self.button_previous_id_var.set("USE PREVIOUS ID: " + str(self.current_event_id) + ": " + self.current_event_name)
                         self.mega_event_dic["id"] = self.current_event_id
                         self.mega_event_dic["name"] = self.current_event_name
+                elif(self.radio_button_var.get()==2):
+                    print(self.radio_button_var.get())
+                    self.mega_event_dic["id"] = self.output_dict[str(self.current_snippet - 1)]['mega_event']['id']
+                    self.mega_event_dic["name"] = self.output_dict[str(self.current_snippet -1)]['mega_event']['name']
                 else:
-                    self.mega_event_dic["id"] = self.current_event_id
-                    self.mega_event_dic["name"] = self.current_event_name
+                    self.mega_event_dic["id"] = int(self.output_dict[str(self.current_snippet)]['mega_event']['id'])
+                    self.mega_event_dic["name"] = self.output_dict[str(self.current_snippet)]['mega_event']['name']
                 category_caption_dict['mega_event'] = self.mega_event_dic
 
         
@@ -385,7 +396,14 @@ class App:
         if 'mega_event' in self.output_dict[str(self.current_snippet)]:
             if(self.output_dict[str(self.current_snippet)]["mega_event"]["id"] == self.current_event_id):
                 self.current_event_name = self.output_dict[str(self.current_snippet)]["mega_event"]["name"]
-        self.button_previous_id_var.set("USE PREVIOUS ID: " + str(self.current_event_id) + ": " + self.current_event_name)
+        if (self.current_snippet > 1 and str(self.current_snippet-1) in self.output_dict):
+            if 'mega_event' in self.output_dict[str(self.current_snippet - 1)]:
+                temp_event_id = int(self.output_dict[str(self.current_snippet - 1)]['mega_event']['id'])
+                temp_event_name = self.output_dict[str(self.current_snippet - 1)]['mega_event']['name']
+                self.button_previous_id_var.set("USE PREVIOUS ID: " + str(temp_event_id) + ": " + temp_event_name)
+        else:
+            self.button_previous_id_var.set("USE PREVIOUS ID: " + "_" + ": " + "_")
+        #self.button_previous_id_var.set("USE PREVIOUS ID: " + str(self.current_event_id) + ": " + self.current_event_name)
         self.set_window_name()
 
     def same_as_previous(self):
@@ -454,8 +472,8 @@ class App:
         self.is_event_checkbutton_var.set(False)
         self.checked_checkbutton()
         self.button_submit.configure(state=NORMAL)
-        if(str(self.current_snippet) in self.output_dict):
-            self.is_event_checkbutton.configure(state=DISABLED)
+        # if(str(self.current_snippet) in self.output_dict):
+        #     self.is_event_checkbutton.configure(state=DISABLED)
 
     def resize(image):
         im = image
@@ -505,10 +523,10 @@ class App:
                     if("name" in currect_snippet_dict["mega_event"]):
                         self.textbox_new_id.configure(state="normal")
                         self.textbox_new_id.insert(tk.END, currect_snippet_dict["mega_event"]["name"])
-                self.is_snippet_transition.configure(state="disabled")
-                self.is_event_checkbutton.configure(state="disabled")
-                self.button_generate_new_id.configure(state="disabled")
-                self.button_previous_id.configure(state="disabled")
+                    self.is_snippet_transition.configure(state="disabled")
+                    self.is_event_checkbutton.configure(state="disabled")
+                    self.button_generate_new_id.configure(state="disabled")
+                    self.button_previous_id.configure(state="disabled")
 
     def play_snippet(self):
         self.snippet_location = '.tmp/' + str(self.current_snippet) + '.' + str(self.video_file_extension)
@@ -596,6 +614,17 @@ class App:
                 self.block_annotation_buttons()
             else:
                 self.unblock_annotation_buttons()
+
+            if (self.current_snippet > 1 and str(self.current_snippet-1) in self.output_dict):
+                if 'mega_event' in self.output_dict[str(self.current_snippet - 1)]:
+                    temp_event_id = int(self.output_dict[str(self.current_snippet - 1)]['mega_event']['id'])
+                    temp_event_name = self.output_dict[str(self.current_snippet - 1)]['mega_event']['name']
+                    self.button_previous_id_var.set("USE PREVIOUS ID: " + str(temp_event_id) + ": " + temp_event_name)
+                else:
+                    self.button_previous_id_var.set("USE PREVIOUS ID: " + "_" + ": " + "_")
+            else:
+                self.button_previous_id_var.set("USE PREVIOUS ID: " + "_" + ": " + "_")
+
             if str(self.current_snippet) in self.output_dict.keys():
                 self.display_message()
             else:
@@ -643,7 +672,17 @@ class App:
             if str(self.current_snippet) in self.output_dict.keys():
                 self.display_message()
             else:
-                self.display_selected_keys.set("")                
+                self.display_selected_keys.set("")  
+
+            if (self.current_snippet > 1 and str(self.current_snippet-1) in self.output_dict):
+                if 'mega_event' in self.output_dict[str(self.current_snippet - 1)]:
+                    temp_event_id = int(self.output_dict[str(self.current_snippet - 1)]['mega_event']['id'])
+                    temp_event_name = self.output_dict[str(self.current_snippet - 1)]['mega_event']['name']
+                    self.button_previous_id_var.set("USE PREVIOUS ID: " + str(temp_event_id) + ": " + temp_event_name)
+                else:
+                    self.button_previous_id_var.set("USE PREVIOUS ID: " + "_" + ": " + "_")
+            else:
+                self.button_previous_id_var.set("USE PREVIOUS ID: " + "_" + ": " + "_")
 
             self.text_current_snippet.set("Playing " + str(self.current_snippet))
             self.button_next.configure(state=NORMAL)
@@ -676,6 +715,17 @@ class App:
                 self.display_message()
             else:
                 self.display_selected_keys.set("")
+
+            if (self.current_snippet > 1 and str(self.current_snippet-1) in self.output_dict):
+                if 'mega_event' in self.output_dict[str(self.current_snippet - 1)]:
+                    temp_event_id = int(self.output_dict[str(self.current_snippet - 1)]['mega_event']['id'])
+                    temp_event_name = self.output_dict[str(self.current_snippet - 1)]['mega_event']['name']
+                    self.button_previous_id_var.set("USE PREVIOUS ID: " + str(temp_event_id) + ": " + temp_event_name)
+                else:
+                    self.button_previous_id_var.set("USE PREVIOUS ID: " + "_" + ": " + "_")
+            else:
+                self.button_previous_id_var.set("USE PREVIOUS ID: " + "_" + ": " + "_")
+
             self.text_current_snippet.set("Playing snippet number " + str(self.current_snippet))
             self.restore_checklist()
             self.stop()
@@ -745,8 +795,12 @@ class App:
                         self.current_event_name = self.output_dict[str(each_key)]['mega_event']['name']
                 if each_key not in self.dict_keys and int(each_key) > self.current_snippet: 
                     self.current_snippet = int(each_key)
-            # print(self.current_event_id,self.current_event_name)
-            self.button_previous_id_var.set("USE PREVIOUS ID: " + str(self.current_event_id) + ": " + self.current_event_name)
+            
+            if self.current_snippet > 1 and 'mega_event' in self.output_dict[str(self.current_snippet - 1)]:
+                temp_event_id = int(self.output_dict[str(self.current_snippet - 1)]['mega_event']['id'])
+                temp_event_name = self.output_dict[str(self.current_snippet - 1)]['mega_event']['name']
+                self.button_previous_id_var.set("USE PREVIOUS ID: " + str(temp_event_id) + ": " + temp_event_name)
+
             if str(self.current_snippet) in self.output_dict.keys():
                 self.display_message()
             else:
