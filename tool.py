@@ -502,13 +502,13 @@ class App:
                 if("mega_event" in currect_snippet_dict):
                     self.is_event_checkbutton_var.set(True)
                     self.checked_checkbutton()
-                    self.is_snippet_transition.configure(state="disabled")
-                    self.is_event_checkbutton.configure(state="disabled")
-                    self.button_generate_new_id.configure(state="disabled")
-                    self.button_previous_id.configure(state="disabled")
                     if("name" in currect_snippet_dict["mega_event"]):
                         self.textbox_new_id.configure(state="normal")
                         self.textbox_new_id.insert(tk.END, currect_snippet_dict["mega_event"]["name"])
+                self.is_snippet_transition.configure(state="disabled")
+                self.is_event_checkbutton.configure(state="disabled")
+                self.button_generate_new_id.configure(state="disabled")
+                self.button_previous_id.configure(state="disabled")
 
     def play_snippet(self):
         self.snippet_location = '.tmp/' + str(self.current_snippet) + '.' + str(self.video_file_extension)
